@@ -1,0 +1,63 @@
+rulesPath: ../01-springboot-dependencies-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/dependencies
+  - name: builtin
+    dataPath: ./data/dependencies
+tests:
+  - ruleID: springboot-dependencies-to-quarkus-20001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20004
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20005
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20006
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20007
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-dependencies-to-quarkus-20008
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1

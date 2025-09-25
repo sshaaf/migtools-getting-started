@@ -1,0 +1,21 @@
+rulesPath: ../12-spring-cloud-native-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/cloud-native
+  - name: builtin
+    dataPath: ./data/cloud-native
+tests:
+  - ruleID: spring-cloud-native-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-cloud-native-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

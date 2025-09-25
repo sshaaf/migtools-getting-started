@@ -1,0 +1,418 @@
+- category: mandatory
+  customVariables: []
+  description: Replace @SpringBootTest with @QuarkusTest
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide
+    url: https://quarkus.io/guides/getting-started-testing
+  message: |
+    Replace Spring Boot's @SpringBootTest with Quarkus @QuarkusTest.
+    
+    Before:
+    ```java
+    @SpringBootTest
+    class UserServiceTest {
+        @Autowired
+        private UserService userService;
+        
+        @Test
+        void testFindUser() {
+            // test implementation
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class UserServiceTest {
+        @Inject
+        UserService userService;
+        
+        @Test
+        void testFindUser() {
+            // test implementation
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00001
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.boot.test.context.SpringBootTest
+
+- category: mandatory
+  customVariables: []
+  description: Replace @WebMvcTest with @QuarkusTest and TestHTTPEndpoint
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide - Testing REST endpoints
+    url: https://quarkus.io/guides/getting-started-testing#testing-web-endpoints
+  message: |
+    Replace Spring Boot's @WebMvcTest with @QuarkusTest and use RestAssured for HTTP testing.
+    
+    Before:
+    ```java
+    @WebMvcTest(UserController.class)
+    class UserControllerTest {
+        @Autowired
+        private MockMvc mockMvc;
+        
+        @Test
+        void testGetUser() throws Exception {
+            mockMvc.perform(get("/users/1"))
+                   .andExpect(status().isOk());
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class UserControllerTest {
+        @Test
+        void testGetUser() {
+            given()
+                .when().get("/users/1")
+                .then()
+                .statusCode(200);
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+
+- category: mandatory
+  customVariables: []
+  description: Replace @DataJpaTest with @QuarkusTest and @TestTransaction
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide - Testing JPA
+    url: https://quarkus.io/guides/getting-started-testing#testing-jpa-persistence
+  message: |
+    Replace Spring Boot's @DataJpaTest with @QuarkusTest and @TestTransaction.
+    
+    Before:
+    ```java
+    @DataJpaTest
+    class UserRepositoryTest {
+        @Autowired
+        private TestEntityManager entityManager;
+        
+        @Autowired
+        private UserRepository userRepository;
+        
+        @Test
+        void testFindByName() {
+            // test implementation
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class UserRepositoryTest {
+        @Inject
+        UserRepository userRepository;
+        
+        @Test
+        @TestTransaction
+        void testFindByName() {
+            // test implementation
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+
+- category: mandatory
+  customVariables: []
+  description: Replace MockMvc with RestAssured
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide - REST Assured
+    url: https://quarkus.io/guides/getting-started-testing#testing-web-endpoints
+  message: |
+    Replace Spring MockMvc with RestAssured for HTTP endpoint testing.
+    
+    Before:
+    ```java
+    @Autowired
+    private MockMvc mockMvc;
+    
+    @Test
+    void testCreateUser() throws Exception {
+        mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"John\"}"))
+               .andExpect(status().isCreated());
+    }
+    ```
+    
+    After:
+    ```java
+    @Test
+    void testCreateUser() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"name\":\"John\"}")
+            .when().post("/users")
+            .then()
+            .statusCode(201);
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00004
+  when:
+    java.referenced:
+      pattern: org.springframework.test.web.servlet.MockMvc
+
+- category: mandatory
+  customVariables: []
+  description: Replace @MockBean with @InjectMock
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide - Mocking
+    url: https://quarkus.io/guides/getting-started-testing#mock-support
+  message: |
+    Replace Spring Boot's @MockBean with Quarkus @InjectMock.
+    
+    Before:
+    ```java
+    @SpringBootTest
+    class UserServiceTest {
+        @MockBean
+        private UserRepository userRepository;
+        
+        @Test
+        void testFindUser() {
+            when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+            // test implementation
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class UserServiceTest {
+        @InjectMock
+        UserRepository userRepository;
+        
+        @Test
+        void testFindUser() {
+            when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+            // test implementation
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00005
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.boot.test.mock.mockito.MockBean
+
+- category: mandatory
+  customVariables: []
+  description: Replace TestRestTemplate with RestAssured
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide
+    url: https://quarkus.io/guides/getting-started-testing
+  message: |
+    Replace Spring Boot's TestRestTemplate with RestAssured.
+    
+    Before:
+    ```java
+    @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    class UserControllerIntegrationTest {
+        @Autowired
+        private TestRestTemplate restTemplate;
+        
+        @Test
+        void testGetUser() {
+            ResponseEntity<User> response = restTemplate.getForEntity("/users/1", User.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class UserControllerIntegrationTest {
+        @Test
+        void testGetUser() {
+            given()
+                .when().get("/users/1")
+                .then()
+                .statusCode(200);
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00006
+  when:
+    java.referenced:
+      pattern: org.springframework.boot.test.web.client.TestRestTemplate
+
+- category: optional
+  customVariables: []
+  description: Replace @TestPropertySource with @TestProfile
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide - Test Profiles
+    url: https://quarkus.io/guides/getting-started-testing#testing_different_profiles
+  message: |
+    Replace Spring Boot's @TestPropertySource with Quarkus @TestProfile.
+    
+    Before:
+    ```java
+    @SpringBootTest
+    @TestPropertySource(properties = {"app.feature.enabled=false"})
+    class FeatureDisabledTest {
+        // test implementation
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    @TestProfile(FeatureDisabledTestProfile.class)
+    class FeatureDisabledTest {
+        // test implementation
+    }
+    
+    public static class FeatureDisabledTestProfile implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("app.feature.enabled", "false");
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00007
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.test.context.TestPropertySource
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Sql with Quarkus test data setup
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide
+    url: https://quarkus.io/guides/getting-started-testing
+  message: |
+    Replace Spring Boot's @Sql with Quarkus test data setup approaches.
+    
+    Before:
+    ```java
+    @Test
+    @Sql("/test-data.sql")
+    void testWithData() {
+        // test implementation
+    }
+    ```
+    
+    After: Use one of these approaches:
+    1. Use import.sql in test resources
+    2. Use @TestTransaction with programmatic setup
+    3. Use @BeforeEach method to set up test data
+    
+    ```java
+    @Test
+    @TestTransaction
+    void testWithData() {
+        // Set up test data programmatically
+        User user = new User();
+        user.name = "Test User";
+        user.persist();
+        
+        // test implementation
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00008
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.test.context.jdbc.Sql
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring test slices with @QuarkusTest
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide
+    url: https://quarkus.io/guides/getting-started-testing
+  message: |
+    Replace Spring Boot test slices with @QuarkusTest.
+    
+    Spring Boot test slices like @JsonTest, @JdbcTest, etc. should be replaced with @QuarkusTest.
+    Quarkus tests start the full application context but are optimized for fast startup.
+    
+    Before:
+    ```java
+    @JsonTest
+    class JsonSerializationTest {
+        @Autowired
+        private JacksonTester<User> json;
+    }
+    ```
+    
+    After:
+    ```java
+    @QuarkusTest
+    class JsonSerializationTest {
+        @Inject
+        ObjectMapper objectMapper;
+        
+        @Test
+        void testSerialization() throws Exception {
+            User user = new User("John");
+            String json = objectMapper.writeValueAsString(user);
+            // test implementation
+        }
+    }
+    ```
+  ruleID: springboot-testing-to-quarkus-00009
+  when:
+    or:
+    - java.referenced:
+        location: ANNOTATION
+        pattern: org.springframework.boot.test.autoconfigure.json.JsonTest
+    - java.referenced:
+        location: ANNOTATION
+        pattern: org.springframework.boot.test.autoconfigure.jdbc.JdbcTest

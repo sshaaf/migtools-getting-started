@@ -1,0 +1,411 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Security WebSecurityConfigurerAdapter with Quarkus Security configuration
+  effort: 4
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide
+    url: https://quarkus.io/guides/security
+  - title: Quarkus HTTP Authorization Guide
+    url: https://quarkus.io/guides/security-authorize-web-endpoints-reference
+  message: |
+    Replace Spring Security WebSecurityConfigurerAdapter with Quarkus Security configuration.
+    
+    Before:
+    ```java
+    @Configuration
+    @EnableWebSecurity
+    public class SecurityConfig extends WebSecurityConfigurerAdapter {
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            http.authorizeRequests()
+                .antMatchers("/public/**").permitAll()
+                .antMatchers("/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated();
+        }
+    }
+    ```
+    
+    After: Use application.properties and/or @RolesAllowed annotations:
+    ```properties
+    quarkus.http.auth.permission.public.paths=/public/*
+    quarkus.http.auth.permission.public.policy=permit
+    quarkus.http.auth.permission.admin.paths=/admin/*
+    quarkus.http.auth.permission.admin.policy=role-policy
+    quarkus.http.auth.permission.admin.roles=ADMIN
+    quarkus.http.auth.permission.authenticated.paths=/*
+    quarkus.http.auth.permission.authenticated.policy=authenticated
+    ```
+  ruleID: springboot-security-to-quarkus-00001
+  when:
+    java.referenced:
+      pattern: org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+
+- category: mandatory
+  customVariables: []
+  description: Replace @PreAuthorize with @RolesAllowed
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - Method Security
+    url: https://quarkus.io/guides/security#method-level-security
+  message: |
+    Replace Spring Security @PreAuthorize with @RolesAllowed.
+    
+    Before:
+    ```java
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+    
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public User getUser(Long id) {
+        return userRepository.findById(id);
+    }
+    ```
+    
+    After:
+    ```java
+    @RolesAllowed("ADMIN")
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+    
+    @RolesAllowed({"USER", "ADMIN"})
+    public User getUser(Long id) {
+        return userRepository.findById(id);
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.security.access.prepost.PreAuthorize
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Secured with @RolesAllowed
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - Method Security
+    url: https://quarkus.io/guides/security#method-level-security
+  message: |
+    Replace Spring Security @Secured with @RolesAllowed.
+    
+    Before:
+    ```java
+    @Secured("ROLE_ADMIN")
+    public void adminOperation() {
+        // admin operation
+    }
+    
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public void userOperation() {
+        // user operation
+    }
+    ```
+    
+    After:
+    ```java
+    @RolesAllowed("ADMIN")
+    public void adminOperation() {
+        // admin operation
+    }
+    
+    @RolesAllowed({"USER", "ADMIN"})
+    public void userOperation() {
+        // user operation
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.security.access.annotation.Secured
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Authentication with Quarkus SecurityIdentity
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - SecurityIdentity
+    url: https://quarkus.io/guides/security#security-identity
+  message: |
+    Replace Spring Authentication with Quarkus SecurityIdentity.
+    
+    Before:
+    ```java
+    @GetMapping("/profile")
+    public UserProfile getProfile(Authentication authentication) {
+        String username = authentication.getName();
+        return userService.getProfile(username);
+    }
+    ```
+    
+    After:
+    ```java
+    @GET
+    @Path("/profile")
+    public UserProfile getProfile(@Context SecurityContext securityContext) {
+        String username = securityContext.getUserPrincipal().getName();
+        return userService.getProfile(username);
+    }
+    
+    // Or inject SecurityIdentity
+    @Inject
+    SecurityIdentity securityIdentity;
+    
+    @GET
+    @Path("/profile")
+    public UserProfile getProfile() {
+        String username = securityIdentity.getPrincipal().getName();
+        return userService.getProfile(username);
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00004
+  when:
+    java.referenced:
+      pattern: org.springframework.security.core.Authentication
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @AuthenticationPrincipal with Quarkus SecurityIdentity
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - SecurityIdentity
+    url: https://quarkus.io/guides/security#security-identity
+  message: |
+    Replace Spring @AuthenticationPrincipal with Quarkus SecurityIdentity injection.
+    
+    Before:
+    ```java
+    @GetMapping("/me")
+    public User getCurrentUser(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return userService.findById(userPrincipal.getId());
+    }
+    ```
+    
+    After:
+    ```java
+    @Inject
+    SecurityIdentity securityIdentity;
+    
+    @GET
+    @Path("/me")
+    public User getCurrentUser() {
+        String username = securityIdentity.getPrincipal().getName();
+        return userService.findByUsername(username);
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00005
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.security.core.annotation.AuthenticationPrincipal
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring PasswordEncoder with Quarkus password hashing
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - Password Storage
+    url: https://quarkus.io/guides/security-jpa#password-storage-and-hashing
+  message: |
+    Replace Spring PasswordEncoder with Quarkus password hashing utilities.
+    
+    Before:
+    ```java
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    public void createUser(String username, String password) {
+        String hashedPassword = passwordEncoder.encode(password);
+        // save user
+    }
+    ```
+    
+    After:
+    ```java
+    @Inject
+    BcryptUtil bcryptUtil;
+    
+    public void createUser(String username, String password) {
+        String hashedPassword = BcryptUtil.bcryptHash(password);
+        // save user
+    }
+    
+    // For verification
+    public boolean verifyPassword(String password, String hashedPassword) {
+        return BcryptUtil.matches(password, hashedPassword);
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00006
+  when:
+    java.referenced:
+      pattern: org.springframework.security.crypto.password.PasswordEncoder
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring UserDetailsService with Quarkus SecurityIdentityAugmentor
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - Custom Authentication
+    url: https://quarkus.io/guides/security-customization
+  message: |
+    Replace Spring UserDetailsService with Quarkus SecurityIdentityAugmentor or IdentityProvider.
+    
+    Before:
+    ```java
+    @Service
+    public class CustomUserDetailsService implements UserDetailsService {
+        @Override
+        public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+            User user = userRepository.findByUsername(username);
+            return new CustomUserPrincipal(user);
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class CustomIdentityProvider implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
+        @Override
+        public Class<UsernamePasswordAuthenticationRequest> getRequestType() {
+            return UsernamePasswordAuthenticationRequest.class;
+        }
+        
+        @Override
+        public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request, 
+                                                  AuthenticationRequestContext context) {
+            // Custom authentication logic
+            return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
+                    .setPrincipal(() -> request.getUsername())
+                    .addRole("USER")
+                    .build());
+        }
+    }
+    ```
+  ruleID: springboot-security-to-quarkus-00007
+  when:
+    java.referenced:
+      pattern: org.springframework.security.core.userdetails.UserDetailsService
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @EnableGlobalMethodSecurity with Quarkus configuration
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - Method Security
+    url: https://quarkus.io/guides/security#method-level-security
+  message: |
+    Replace Spring @EnableGlobalMethodSecurity with Quarkus method security configuration.
+    
+    Before:
+    ```java
+    @Configuration
+    @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
+    public class MethodSecurityConfig {
+    }
+    ```
+    
+    After: Remove this configuration class. Method security is enabled by default in Quarkus.
+    Use @RolesAllowed, @PermitAll, and @DenyAll annotations on methods as needed.
+    
+    Add to application.properties if you need to disable method security:
+    ```properties
+    quarkus.security.jaxrs.deny-unannotated-endpoints=false
+    ```
+  ruleID: springboot-security-to-quarkus-00008
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring CSRF configuration with Quarkus CSRF configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide - CSRF Protection
+    url: https://quarkus.io/guides/security-csrf-prevention
+  message: |
+    Replace Spring CSRF configuration with Quarkus CSRF configuration.
+    
+    Before:
+    ```java
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable(); // or configure CSRF
+    }
+    ```
+    
+    After: Use application.properties to configure CSRF:
+    ```properties
+    # Enable CSRF protection
+    quarkus.csrf-prevention.enabled=true
+    
+    # Or disable CSRF protection
+    quarkus.csrf-prevention.enabled=false
+    ```
+    
+    For REST APIs, CSRF is typically disabled. For web applications with forms, enable it.
+  ruleID: springboot-security-to-quarkus-00009
+  when:
+    builtin.filecontent:
+      filePattern: .*\.java
+      pattern: \.csrf\(\)
+
+- category: optional
+  customVariables: []
+  description: Replace Spring Session with Quarkus session management
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus HTTP Session Guide
+    url: https://quarkus.io/guides/http-reference#session-management
+  message: |
+    Replace Spring Session with Quarkus session management.
+    
+    Quarkus provides built-in session management. Configure session settings in application.properties:
+    ```properties
+    quarkus.http.session.timeout=30M
+    quarkus.http.session.cookie.name=QUARKUS_SESSION
+    quarkus.http.session.cookie.http-only=true
+    quarkus.http.session.cookie.secure=true
+    ```
+    
+    For distributed sessions, consider using Quarkus with Redis or other external session stores.
+  ruleID: springboot-security-to-quarkus-00010
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.session.spring-session-core
