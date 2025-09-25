@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: springboot2-postgres
+    environment:
+      POSTGRES_DB: springboot2_migration
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - springboot2-network
+    
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: springboot2-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - springboot2-network
+    
+  redis:
+    image: redis:6-alpine
+    container_name: springboot2-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - springboot2-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  springboot2-network:
+    driver: bridge

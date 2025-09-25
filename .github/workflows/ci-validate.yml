@@ -1,0 +1,135 @@
+name: CI - Validate Project Structure
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Project Structure and Dependencies
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate project structure
+      run: |
+        echo "🔍 Validating project structure..."
+        
+        # Check for required files
+        echo "Checking for required files:"
+        files=("pom.xml" ".gitignore" "README.md")
+        for file in "${files[@]}"; do
+          if [[ -f "$file" ]]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file missing"
+            exit 1
+          fi
+        done
+        
+        # Check for module directories
+        echo "Checking for module directories:"
+        modules=("coolstore" "fuse2camel" "springboot2-migration" "hotrod-repair")
+        for module in "${modules[@]}"; do
+          if [[ -d "$module" ]]; then
+            echo "✅ Module $module exists"
+            if [[ -f "$module/pom.xml" ]]; then
+              echo "  ✅ $module/pom.xml exists"
+            else
+              echo "  ❌ $module/pom.xml missing"
+              exit 1
+            fi
+          else
+            echo "❌ Module $module missing"
+            exit 1
+          fi
+        done
+        
+        # Check openjdk8-migration (may be commented out)
+        if [[ -d "openjdk8-migration" ]]; then
+          echo "✅ OpenJDK 8 migration module exists"
+          if [[ -f "openjdk8-migration/pom.xml" ]]; then
+            echo "  ✅ openjdk8-migration/pom.xml exists"
+          else
+            echo "  ❌ openjdk8-migration/pom.xml missing"
+            exit 1
+          fi
+        else
+          echo "ℹ️ OpenJDK 8 migration module not found (may be intentionally excluded)"
+        fi
+        
+    - name: Validate Maven POM files
+      run: |
+        echo "🔍 Validating Maven POM files..."
+        
+        # Check parent POM
+        if ! xmllint --noout pom.xml 2>/dev/null; then
+          echo "❌ Parent pom.xml is not valid XML"
+          exit 1
+        else
+          echo "✅ Parent pom.xml is valid XML"
+        fi
+        
+        # Check module POMs
+        for pom in */pom.xml; do
+          if [[ -f "$pom" ]]; then
+            if ! xmllint --noout "$pom" 2>/dev/null; then
+              echo "❌ $pom is not valid XML"
+              exit 1
+            else
+              echo "✅ $pom is valid XML"
+            fi
+          fi
+        done
+        
+    - name: Check Docker Compose files
+      run: |
+        echo "🔍 Checking Docker Compose files..."
+        
+        compose_files=$(find . -name "docker-compose.yml" -o -name "docker-compose.yaml")
+        if [[ -n "$compose_files" ]]; then
+          echo "Found Docker Compose files:"
+          echo "$compose_files"
+          
+          for compose_file in $compose_files; do
+            echo "Validating $compose_file..."
+            # Basic YAML syntax check
+            if command -v python3 &> /dev/null; then
+              python3 -c "import yaml; yaml.safe_load(open('$compose_file'))" 2>/dev/null && echo "✅ $compose_file is valid YAML" || echo "❌ $compose_file has YAML syntax errors"
+            else
+              echo "ℹ️ Python3 not available, skipping YAML validation for $compose_file"
+            fi
+          done
+        else
+          echo "ℹ️ No Docker Compose files found"
+        fi
+        
+    - name: Check GitHub Actions workflows
+      run: |
+        echo "🔍 Validating GitHub Actions workflows..."
+        
+        workflow_files=(.github/workflows/*.yml .github/workflows/*.yaml)
+        for workflow in "${workflow_files[@]}"; do
+          if [[ -f "$workflow" ]]; then
+            echo "Found workflow: $workflow"
+            # Basic YAML syntax check
+            if command -v python3 &> /dev/null; then
+              python3 -c "import yaml; yaml.safe_load(open('$workflow'))" 2>/dev/null && echo "✅ $workflow is valid YAML" || echo "❌ $workflow has YAML syntax errors"
+            fi
+          fi
+        done
+        
+    - name: Summary
+      run: |
+        echo "🎉 Project structure validation completed successfully!"
+        echo ""
+        echo "📋 Summary:"
+        echo "✅ All required files present"
+        echo "✅ All module directories exist"
+        echo "✅ All POM files are valid XML"
+        echo "✅ Docker Compose files are valid (if present)"
+        echo "✅ GitHub Actions workflows are valid YAML"

@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: hotrods-postgres
+    environment:
+      POSTGRES_DB: hotrods_repair
+      POSTGRES_USER: hotrods
+      POSTGRES_PASSWORD: hotrods123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - hotrods-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotrods -d hotrods_repair"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: hotrods-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@hotrods.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgres
+    networks:
+      - hotrods-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+  # JBoss EAP 7 application server (optional for local development)
+  jboss-eap:
+    image: jboss/wildfly:20.0.1.Final
+    container_name: hotrods-eap
+    environment:
+      - WILDFLY_USER=admin
+      - WILDFLY_PASS=admin123
+    ports:
+      - "8080:8080"
+      - "9990:9990"
+    depends_on:
+      - postgres
+    networks:
+      - hotrods-network
+    volumes:
+      - ./target/hotrods-car-repair.war:/opt/jboss/wildfly/standalone/deployments/hotrods-car-repair.war
+      - ./database/wildfly-config:/opt/jboss/wildfly/standalone/configuration/custom
+    command: >
+      /bin/bash -c "
+      /opt/jboss/wildfly/bin/add-user.sh admin admin123 --silent &&
+      /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  hotrods-network:
+    driver: bridge

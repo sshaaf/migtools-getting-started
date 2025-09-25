@@ -1,0 +1,95 @@
+name: CI - Main Project (OpenJDK 17)
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  compile-main:
+    runs-on: ubuntu-latest
+    name: Compile Main Project with OpenJDK 17
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Verify Maven installation
+      run: |
+        java -version
+        mvn --version
+        
+    - name: Compile main modules (excluding openjdk8-migration)
+      run: |
+        echo "Compiling main project modules with OpenJDK 17..."
+        # Only exclude openjdk8-migration if it's actually in the reactor
+        if grep -q "openjdk8-migration" pom.xml && ! grep -q "<!-- <module>openjdk8-migration</module> -->" pom.xml; then
+          mvn clean compile -pl '!openjdk8-migration' -q
+        else
+          mvn clean compile -q
+        fi
+        
+    - name: Run tests for main modules (excluding openjdk8-migration)
+      run: |
+        echo "Running tests for main project modules..."
+        if grep -q "openjdk8-migration" pom.xml && ! grep -q "<!-- <module>openjdk8-migration</module> -->" pom.xml; then
+          mvn test -pl '!openjdk8-migration' -q
+        else
+          mvn test -q
+        fi
+        
+    - name: Package main modules (excluding openjdk8-migration)
+      run: |
+        echo "Packaging main project modules..."
+        if grep -q "openjdk8-migration" pom.xml && ! grep -q "<!-- <module>openjdk8-migration</module> -->" pom.xml; then
+          mvn package -pl '!openjdk8-migration' -DskipTests -q
+        else
+          mvn package -DskipTests -q
+        fi
+        
+    - name: Verify artifacts
+      run: |
+        echo "Verifying generated artifacts..."
+        find . -name "*.jar" -o -name "*.war" | head -10
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: main-project-artifacts-jdk17
+        path: |
+          target/*.jar
+          */target/*.jar
+          */target/*.war
+        retention-days: 7
+        
+  compile-status:
+    runs-on: ubuntu-latest
+    needs: [compile-main]
+    if: always()
+    steps:
+    - name: Check compilation status
+      run: |
+        if [[ "${{ needs.compile-main.result }}" == "success" ]]; then
+          echo "✅ Main project compilation with OpenJDK 17: SUCCESS"
+          exit 0
+        else
+          echo "❌ Main project compilation with OpenJDK 17: FAILED"
+          exit 1
+        fi

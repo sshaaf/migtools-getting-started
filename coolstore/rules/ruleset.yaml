@@ -1,0 +1,2 @@
+name: audit-logging-migration
+description: This ruleset provides rules to help migrate from version 1.x to 2.x of the custom audit logging library.
