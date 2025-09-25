@@ -21,6 +21,7 @@ The **MTA Demo Project** provides hands-on examples of common enterprise migrati
 
 Each module represents a **complete, example application** with intentionally deprecated patterns that MTA can detect and provide migration guidance for.
 
+
 ## 📋 **Migration Scenarios**
 
 | Module | Migration Path | Description | Key Technologies | Migration Issues |
