@@ -69,7 +69,7 @@ To use Developer Lightspeed. You will need access to an LLM. To use it with Open
 ```
   OpenShift:
     environment:
-      OPENAI_API_KEY: "ed4f9f076eb480926b654be632d8bc3f" # Required
+      OPENAI_API_KEY: "YOUR_API_KEY" # Required
     provider: ChatOpenAI
     args:
       model: llama-4-scout-17b-16e-w4a16 # Required
