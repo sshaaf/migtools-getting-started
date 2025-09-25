@@ -1,6 +1,5 @@
 # Red Hat Migration Toolkit for Applications (MTA) - Getting started demo project
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/Java-8%2B-orange.svg)](https://openjdk.java.net/)
 [![Maven](https://img.shields.io/badge/Maven-3.6%2B-green.svg)](https://maven.apache.org/)
 [![Java CI with Maven](https://github.com/sshaaf/migtools-getting-started/actions/workflows/maven.yml/badge.svg)](https://github.com/sshaaf/migtools-getting-started/actions/workflows/maven.yml)
@@ -46,7 +45,6 @@ mta-demo-project/
 ├── 📁 .github/                       # CI/CD workflows and automation
 ├── 📄 pom.xml                        # Parent Maven configuration
 ├── 📄 README.md                      # This file
-└── 📄 LICENSE                        # Apache 2.0 License
 ```
 
 ## **Getting Started**
