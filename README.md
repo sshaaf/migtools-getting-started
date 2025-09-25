@@ -63,6 +63,24 @@ Before you begin, ensure you have the following installed:
 - ** Git**: For cloning and version control
 
 
+ Developer Lightspeed is part of the MTA extension installed in VSCode. Once the installation is done, click the MTA extension link for setup/configuration.
+
+To use Developer Lightspeed. You will need access to an LLM. To use it with OpenShift using MaaS following `Gen-AI configuration should work`
+```
+  OpenShift:
+    environment:
+      OPENAI_API_KEY: "ed4f9f076eb480926b654be632d8bc3f" # Required
+    provider: ChatOpenAI
+    args:
+      model: llama-4-scout-17b-16e-w4a16 # Required
+      configuration:
+        baseURL: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.xx.com:443/v1"
+```
+
+Next you should configure a Modernization profile with targets. For example
+![alt text](.github/assets/Modernization_profile.jpg)
+
+
 ### **Module-Specific Build Requirements**
 
 | Module | Java Version | Special Requirements | Build Command |
