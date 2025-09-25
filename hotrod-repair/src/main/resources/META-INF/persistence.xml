@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence 
+             http://java.sun.com/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <!-- Deprecated JPA 2.1 persistence configuration for EAP 8 migration -->
+    <persistence-unit name="hotrodsPU" transaction-type="JTA">
+        <description>Hot Rods Car Repair Shop Persistence Unit - JPA 2.1</description>
+        
+        <!-- Deprecated JTA data source reference -->
+        <jta-data-source>java:jboss/datasources/HotRodsDS</jta-data-source>
+        
+        <!-- Deprecated explicit entity class listings -->
+        <class>com.redhat.mta.examples.hotrod.repair.entity.Customer</class>
+        <class>com.redhat.mta.examples.hotrod.repair.entity.Vehicle</class>
+        <class>com.redhat.mta.examples.hotrod.repair.entity.ServiceOrder</class>
+        <class>com.redhat.mta.examples.hotrod.repair.entity.ServiceItem</class>
+        
+        <!-- Deprecated exclude-unlisted-classes pattern -->
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        
+        <!-- Deprecated shared cache mode -->
+        <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
+        
+        <!-- Deprecated validation mode -->
+        <validation-mode>AUTO</validation-mode>
+        
+        <properties>
+            <!-- Deprecated Hibernate-specific properties -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+            
+            <!-- Deprecated connection pool settings -->
+            <property name="hibernate.connection.provider_class" value="org.hibernate.connection.C3P0ConnectionProvider"/>
+            <property name="hibernate.c3p0.min_size" value="5"/>
+            <property name="hibernate.c3p0.max_size" value="20"/>
+            <property name="hibernate.c3p0.timeout" value="300"/>
+            <property name="hibernate.c3p0.max_statements" value="50"/>
+            <property name="hibernate.c3p0.idle_test_period" value="3000"/>
+            
+            <!-- Deprecated cache configuration -->
+            <property name="hibernate.cache.use_second_level_cache" value="true"/>
+            <property name="hibernate.cache.use_query_cache" value="true"/>
+            <property name="hibernate.cache.region.factory_class" value="org.hibernate.cache.infinispan.InfinispanRegionFactory"/>
+            <property name="hibernate.cache.infinispan.cachemanager" value="java:jboss/infinispan/container/hibernate"/>
+            
+            <!-- Deprecated transaction settings -->
+            <property name="hibernate.transaction.jta.platform" value="org.hibernate.engine.transaction.jta.platform.internal.JBossAppServerJtaPlatform"/>
+            <property name="hibernate.transaction.manager_lookup_class" value="org.hibernate.transaction.JBossTransactionManagerLookup"/>
+            
+            <!-- Deprecated schema generation -->
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="javax.persistence.schema-generation.create-source" value="metadata"/>
+            <property name="javax.persistence.schema-generation.drop-source" value="metadata"/>
+            
+            <!-- Deprecated batch settings -->
+            <property name="hibernate.jdbc.batch_size" value="20"/>
+            <property name="hibernate.order_inserts" value="true"/>
+            <property name="hibernate.order_updates" value="true"/>
+            <property name="hibernate.jdbc.batch_versioned_data" value="true"/>
+            
+            <!-- Deprecated JNDI settings -->
+            <property name="hibernate.jndi.url" value="localhost:1099"/>
+            <property name="hibernate.jndi.class" value="org.jnp.interfaces.NamingContextFactory"/>
+            
+            <!-- Deprecated statistics and logging -->
+            <property name="hibernate.generate_statistics" value="true"/>
+            <property name="hibernate.session.events.log" value="true"/>
+            <property name="hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS" value="1000"/>
+            
+            <!-- Deprecated entity manager factory settings -->
+            <property name="hibernate.ejb.entitymanager_factory_name" value="java:/HotRodsEntityManagerFactory"/>
+            
+            <!-- Deprecated auto-discovery settings -->
+            <property name="hibernate.archive.autodetection" value="class, hbm"/>
+            
+            <!-- Deprecated default schema -->
+            <property name="hibernate.default_schema" value="hotrods"/>
+            
+            <!-- Deprecated naming strategy -->
+            <property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.ImprovedNamingStrategy"/>
+            
+            <!-- Deprecated connection settings -->
+            <property name="hibernate.connection.autocommit" value="false"/>
+            <property name="hibernate.connection.release_mode" value="after_transaction"/>
+            
+            <!-- Deprecated SQL settings -->
+            <property name="hibernate.jdbc.use_streams_for_binary" value="true"/>
+            <property name="hibernate.jdbc.use_scrollable_resultset" value="true"/>
+            <property name="hibernate.jdbc.use_get_generated_keys" value="true"/>
+            
+            <!-- Deprecated validation settings -->
+            <property name="javax.persistence.validation.group.pre-persist" value="javax.validation.groups.Default"/>
+            <property name="javax.persistence.validation.group.pre-update" value="javax.validation.groups.Default"/>
+            <property name="javax.persistence.validation.group.pre-remove" value=""/>
+        </properties>
+    </persistence-unit>
+    
+</persistence>

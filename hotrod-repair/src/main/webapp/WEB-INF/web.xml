@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+         http://java.sun.com/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+    <display-name>Hot Rods Car Repair Shop</display-name>
+    <description>JBoss EAP 7 application demonstrating deprecated Java EE patterns for migration to EAP 8</description>
+
+    <!-- Deprecated web.xml configuration patterns for EAP 8 migration -->
+    
+    <!-- Welcome file list - deprecated pattern -->
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- Session configuration - deprecated patterns -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <name>JSESSIONID</name>
+            <http-only>true</http-only>
+            <secure>false</secure>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+    <!-- Deprecated servlet mapping pattern -->
+    <servlet>
+        <servlet-name>CustomerServlet</servlet-name>
+        <servlet-class>com.redhat.mta.examples.hotrod.repair.web.CustomerServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>CustomerServlet</servlet-name>
+        <url-pattern>/customers</url-pattern>
+    </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>CustomerServlet</servlet-name>
+        <url-pattern>/customers/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Deprecated filter configuration -->
+    <filter>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <filter-class>com.redhat.mta.examples.hotrod.repair.web.CharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>forceEncoding</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    
+    <filter-mapping>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Deprecated security constraint patterns -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>Admin Area</web-resource-name>
+            <url-pattern>/admin/*</url-pattern>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>admin</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Deprecated login configuration -->
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <realm-name>HotRodsRealm</realm-name>
+        <form-login-config>
+            <form-login-page>/login.jsp</form-login-page>
+            <form-error-page>/login-error.jsp</form-error-page>
+        </form-login-config>
+    </login-config>
+
+    <!-- Deprecated security role definitions -->
+    <security-role>
+        <role-name>admin</role-name>
+    </security-role>
+    
+    <security-role>
+        <role-name>mechanic</role-name>
+    </security-role>
+    
+    <security-role>
+        <role-name>customer</role-name>
+    </security-role>
+
+    <!-- Deprecated context parameters -->
+    <context-param>
+        <param-name>javax.faces.PROJECT_STAGE</param-name>
+        <param-value>Development</param-value>
+    </context-param>
+    
+    <context-param>
+        <param-name>javax.faces.FACELETS_SKIP_COMMENTS</param-name>
+        <param-value>true</param-value>
+    </context-param>
+
+    <!-- Deprecated listener configuration -->
+    <listener>
+        <listener-class>com.redhat.mta.examples.hotrod.repair.web.ApplicationContextListener</listener-class>
+    </listener>
+
+    <!-- Error page configuration - deprecated patterns -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/error/404.jsp</location>
+    </error-page>
+    
+    <error-page>
+        <error-code>500</error-code>
+        <location>/error/500.jsp</location>
+    </error-page>
+    
+    <error-page>
+        <exception-type>java.lang.Exception</exception-type>
+        <location>/error/general-error.jsp</location>
+    </error-page>
+
+    <!-- MIME type mappings - deprecated pattern -->
+    <mime-mapping>
+        <extension>css</extension>
+        <mime-type>text/css</mime-type>
+    </mime-mapping>
+    
+    <mime-mapping>
+        <extension>js</extension>
+        <mime-type>application/javascript</mime-type>
+    </mime-mapping>
+
+    <!-- Resource references - deprecated pattern -->
+    <resource-ref>
+        <res-ref-name>jdbc/HotRodsDB</res-ref-name>
+        <res-type>javax.sql.DataSource</res-type>
+        <res-auth>Container</res-auth>
+        <res-sharing-scope>Shareable</res-sharing-scope>
+    </resource-ref>
+
+    <!-- EJB references - deprecated pattern -->
+    <ejb-local-ref>
+        <ejb-ref-name>ejb/CustomerService</ejb-ref-name>
+        <ejb-ref-type>Session</ejb-ref-type>
+        <local>com.redhat.mta.examples.hotrod.repair.service.CustomerServiceLocal</local>
+        <ejb-link>CustomerService</ejb-link>
+    </ejb-local-ref>
+
+</web-app>

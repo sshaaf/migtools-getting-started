@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:c="http://camel.apache.org/schema/blueprint"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="
+             http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+             http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+    <c:camelContext>
+        <c:route>
+            <c:from uri="direct:trigger-state-machine"/>
+            <c:setHeader headerName="CamelAwsStateMachineExecutionArn">
+                <c:constant>arn:aws:states:eu-central-1:123456789012:stateMachine:PaymentWorkflow</c:constant>
+            </c:setHeader>
+            <c:to uri="aws2-step-functions://payment?operation=startExecution"/>
+        </c:route>
+    </c:camelContext>
+</blueprint>
