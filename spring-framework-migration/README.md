@@ -187,3 +187,4 @@ This example demonstrates **real-world migration challenges**:
 - **Expected compilation warnings** - deprecation warnings are part of the demonstration
 
 This module provides **comprehensive migration examples** for Spring Framework 5 to 6 migration analysis! 🍃
+
