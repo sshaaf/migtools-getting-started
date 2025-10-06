@@ -275,7 +275,7 @@
     }
     ```
     
-    Note: @Valid is from javax.validation.Valid, which works the same in Quarkus.
+    Note: @Valid is from jakarta.validation.Valid in Quarkus 3.x (Jakarta EE namespace).
   ruleID: springboot-web-to-quarkus-00008
   when:
     java.referenced:

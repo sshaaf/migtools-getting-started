@@ -46,3 +46,5 @@ public class GlobalLoggingFilter implements GlobalFilter, Ordered {
         return Ordered.HIGHEST_PRECEDENCE;
     }
 }
+
+

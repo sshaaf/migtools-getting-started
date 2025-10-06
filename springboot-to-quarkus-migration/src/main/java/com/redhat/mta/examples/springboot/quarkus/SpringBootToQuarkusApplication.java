@@ -37,3 +37,4 @@ public class SpringBootToQuarkusApplication {
         SpringApplication.run(SpringBootToQuarkusApplication.class, args);
     }
 }
+

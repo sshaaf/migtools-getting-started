@@ -31,6 +31,7 @@ Each module represents a **complete, example application** with intentionally de
 | **[springboot2-migration](./springboot2-migration/)** | **Spring Boot 2 → Spring Boot 3** | Enterprise web application demonstrating Spring Boot 2 to 3 migration challenges | Spring Boot 2.7, Spring Security 5, Netflix OSS | `javax.*` → `jakarta.*`, deprecated Spring patterns, Netflix OSS removal |
 | **[hotrod-repair](./hotrod-repair/)** | **JBoss EAP 7 → EAP 8** | Car repair shop management system showcasing EAP 7 to EAP 8 migration patterns | JBoss EAP 7, Java EE 7, JSP, PostgreSQL | Jakarta EE transition, servlet API changes, EJB updates |
 | **[spring-framework-migration](./spring-framework-migration/)** | **Spring Framework 5 → Spring Framework 6** | User management system demonstrating Spring Framework 5 to 6 migration scenarios | Spring Framework 5, Spring Security 5, JPA | `WebMvcConfigurerAdapter`, security configuration, `javax.*` → `jakarta.*` |
+| **[springboot-to-quarkus-migration](./springboot-to-quarkus-migration/)** | **Spring Boot 2.7 → Quarkus 3.28.2** | Comprehensive e-commerce application showcasing Spring Boot to Quarkus migration patterns | Spring Boot 2.7.18, Spring Security, Spring Data JPA | Spring annotations → JAX-RS/CDI, `javax.*` → `jakarta.*`, configuration properties |
 
 ##  **Project Structure**
 
@@ -42,6 +43,7 @@ mta-demo-project/
 ├── 📁 springboot2-migration/         # Spring Boot 2 → Spring Boot 3 migration
 ├── 📁 hotrod-repair/                 # JBoss EAP 7 → EAP 8 migration
 ├── 📁 spring-framework-migration/    # Spring Framework 5 → 6 migration
+├── 📁 springboot-to-quarkus-migration/ # Spring Boot 2.7 → Quarkus 3.28.2 migration
 ├── 📁 .github/                       # CI/CD workflows and automation
 ├── 📄 pom.xml                        # Parent Maven configuration
 ├── 📄 README.md                      # This file
@@ -58,12 +60,18 @@ Before you begin, ensure you have the following installed:
   - **JDK 17+** recommended for modern development
   - **JDK 21** for testing OpenJDK migration scenarios
 
-- ** Apache Maven**: 3.6.0 or higher
+- ** Apache Maven**: 3.8.6 or higher (required for Quarkus 3.x modules)
 - ** Docker** (optional): For running database services
 - ** Git**: For cloning and version control
 
 
- Developer Lightspeed is part of the MTA extension installed in VSCode. Once the installation is done, click the MTA extension link for setup/configuration.
+Developer Lightspeed is part of the MTA extension installed in VSCode. 
+Search for "Migration Toolkit for Applications" 
+![alt text](.github/assets/MTA_Extension_Installation.jpg)
+
+or use this [link](https://marketplace.visualstudio.com/items?itemName=redhat.mta-vscode-extension)
+
+Once the installation is done, click the MTA extension link for setup/configuration.
 
 To use Developer Lightspeed. You will need access to an LLM. To use it with OpenShift using MaaS following `Gen-AI configuration should work`
 ```
@@ -91,6 +99,7 @@ Next you should configure a Modernization profile with targets. For example
 | **springboot2-migration** | JDK 8+ | PostgreSQL, Redis (via Docker) | `mvn clean package` |
 | **hotrod-repair** | JDK 8+ | PostgreSQL (via Docker) | `mvn clean package` |
 | **spring-framework-migration** | JDK 8+ | H2 Database (embedded) | `mvn clean package` |
+| **springboot-to-quarkus-migration** | JDK 11+ (JDK 17+ recommended) | H2 Database (embedded) | `mvn clean package` |
 
 ## 🔬 **Using with Migration Toolkit for Applications (MTA)**
 
@@ -110,6 +119,9 @@ Next you should configure a Modernization profile with targets. For example
    
    # Analyze OpenJDK migration
    mta-cli --input openjdk8-migration/ --target openjdk21 --output reports/openjdk-analysis
+   
+   # Analyze Spring Boot to Quarkus migration
+   mta-cli --input springboot-to-quarkus-migration/ --target quarkus3 --output reports/springboot-quarkus-analysis
    ```
 
 3. **Review Migration Reports**

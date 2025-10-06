@@ -27,12 +27,19 @@
             <dependency>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>3.28.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
+    ```
+    
+    Also add the Quarkus version property:
+    ```xml
+    <properties>
+        <quarkus.platform.version>3.28.2</quarkus.platform.version>
+    </properties>
     ```
   ruleID: springboot-dependencies-to-quarkus-20001
   when:
@@ -45,16 +52,16 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace Spring Boot Web Starter with Quarkus RESTEasy extension
+  description: Replace Spring Boot Web Starter with Quarkus REST extension
   effort: 2
   labels:
   - konveyor.io/source=springboot
   - konveyor.io/target=quarkus
   links:
-  - title: Quarkus RESTEasy Guide
-    url: https://quarkus.io/guides/rest-json
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest
   message: |
-    Replace Spring Boot Web Starter with Quarkus RESTEasy extension.
+    Replace Spring Boot Web Starter with Quarkus REST extension.
     
     Replace:
     ```xml
@@ -68,7 +75,7 @@
     ```xml
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+        <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
     ```
   ruleID: springboot-dependencies-to-quarkus-20002
@@ -261,6 +268,8 @@
         </executions>
     </plugin>
     ```
+    
+    Note: In Quarkus 3.x, the plugin groupId changed from `io.quarkus` to `io.quarkus.platform`.
   ruleID: springboot-dependencies-to-quarkus-20007
   when:
     builtin.xml:

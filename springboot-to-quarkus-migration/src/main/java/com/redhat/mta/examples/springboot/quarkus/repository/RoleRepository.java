@@ -39,3 +39,4 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     
     long countByActive(Boolean active);
 }
+

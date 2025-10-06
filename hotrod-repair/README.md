@@ -12,7 +12,7 @@ This module demonstrates a comprehensive **JBoss EAP 7** application that uses d
 
 ## 🚨 **Deprecated Features Demonstrated**
 
-Based on the [Konveyor EAP 8 rulesets](https://github.com/konveyor/rulesets/tree/main/default/generated/eap8), this application includes:
+Based on the [MTA EAP 8 rulesets](https://github.com/konveyor/rulesets/tree/main/default/generated/eap8), this application includes:
 
 ### **1. Namespace Changes (EAP 8)**
 - ✅ `javax.persistence` → **jakarta.persistence**

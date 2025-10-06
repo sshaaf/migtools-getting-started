@@ -1,6 +1,6 @@
 # 🍃 Spring Boot to Quarkus Migration Example
 
-This module demonstrates a comprehensive **Spring Boot 2.7** application that uses deprecated APIs and patterns requiring migration to **Quarkus**. The application simulates a production-ready e-commerce system and is specifically designed to trigger static code analysis tools to identify migration issues.
+This module demonstrates a comprehensive **Spring Boot 2.7.18** application that uses deprecated APIs and patterns requiring migration to **Quarkus 3.28.2**. The application simulates a production-ready e-commerce system and is specifically designed to trigger static code analysis tools to identify migration issues.
 
 ## 🎯 **Application Overview**
 
@@ -22,10 +22,10 @@ This application intentionally uses **deprecated Spring Boot patterns** that nee
 
 ### **Dependencies & Build Configuration**
 - ❌ **spring-boot-starter-parent** - Should be replaced with Quarkus BOM
-- ❌ **spring-boot-starter-web** - Should be replaced with quarkus-resteasy-reactive
+- ❌ **spring-boot-starter-web** - Should be replaced with quarkus-rest-jackson
 - ❌ **spring-boot-starter-data-jpa** - Should be replaced with quarkus-hibernate-orm-panache
 - ❌ **spring-boot-starter-security** - Should be replaced with quarkus-security
-- ❌ **spring-boot-starter-actuator** - Should be replaced with quarkus-smallrye-health/metrics
+- ❌ **spring-boot-starter-actuator** - Should be replaced with quarkus-smallrye-health and quarkus-micrometer
 - ❌ **spring-boot-starter-test** - Should be replaced with quarkus-junit5
 - ❌ **spring-boot-maven-plugin** - Should be replaced with quarkus-maven-plugin
 
@@ -57,7 +57,7 @@ This application intentionally uses **deprecated Spring Boot patterns** that nee
 - ❌ **@Query** - Should use Panache query methods
 - ❌ **@Modifying** - Should use Panache update/delete methods
 - ❌ **Pageable/Page/Sort** - Should use Panache paging/sorting
-- ❌ **@Transactional (Spring)** - Should use **javax.transaction.Transactional**
+- ❌ **@Transactional (Spring)** - Should use **jakarta.transaction.Transactional**
 
 ### **Dependency Injection & Components**
 - ❌ **@Autowired** - Should use **@Inject**
@@ -89,7 +89,7 @@ This application intentionally uses **deprecated Spring Boot patterns** that nee
 - ❌ **spring.datasource.*** - Should use **quarkus.datasource.***
 - ❌ **spring.jpa.*** - Should use **quarkus.hibernate-orm.***
 - ❌ **spring.security.*** - Should use **quarkus.security.***
-- ❌ **management.*** - Should use **quarkus.smallrye-health/metrics.***
+- ❌ **management.*** - Should use **quarkus.smallrye-health.*** and **quarkus.micrometer.***
 - ❌ **logging.*** - Should use **quarkus.log.***
 - ❌ **Profile-specific files** - Should use profile prefixes (%dev, %prod)
 
@@ -142,8 +142,8 @@ springboot-to-quarkus-migration/
 ## 🚀 **Getting Started**
 
 ### **Prerequisites**
-- **Java 11+**
-- **Maven 3.6+**
+- **Java 11+** (Java 17+ recommended for Quarkus 3.28.2)
+- **Maven 3.8.6+** (required for Quarkus 3.x)
 - **H2 Database** (embedded, included)
 
 ### **Running the Application**
@@ -214,10 +214,10 @@ To analyze this application with MTA/Konveyor:
 
 ```bash
 # Using Konveyor CLI (when available)
-konveyor analyze --input springboot-to-quarkus-migration/ --target quarkus --output reports/
+konveyor analyze --input springboot-to-quarkus-migration/ --target quarkus3 --output reports/
 
 # Using MTA CLI
-mta-cli --input springboot-to-quarkus-migration/ --target quarkus --output reports/springboot-quarkus-analysis
+mta-cli --input springboot-to-quarkus-migration/ --target quarkus3 --output reports/springboot-quarkus-analysis
 ```
 
 ## 📋 **Expected Migration Issues**
@@ -250,31 +250,3 @@ When contributing to this migration example:
 4. **Test coverage** - Ensure all patterns are covered by tests
 5. **No System.out.println** - Use proper logging instead
 
----
-
-## 🎯 **Complete Rule Coverage Achievement**
-
-This enhanced application now demonstrates **ALL 96 Spring Boot to Quarkus migration patterns (100%)**!
-
-### **Core Application Patterns (76 rules)**
-- ✅ **Dependencies (8/8)** - All Spring Boot starters → Quarkus extensions
-- ✅ **Annotations (14/14)** - All Spring annotations → JAX-RS/CDI equivalents  
-- ✅ **Configuration (9/9)** - All application.properties patterns
-- ✅ **Web Layer (10/10)** - All Spring MVC → JAX-RS patterns
-- ✅ **Data Access (10/10)** - All Spring Data → Panache patterns
-- ✅ **Testing (9/9)** - All Spring Test → Quarkus Test patterns
-- ✅ **Security (10/10)** - All Spring Security → Quarkus Security patterns
-- ✅ **Persistence (3/3)** - JPA entity patterns
-
-### **Advanced Patterns (20 rules - Newly Added)**
-- ✅ **RESTful (4/4)** - Including `@ResponseStatus` pattern
-- ✅ **Spring Cloud Gateway (11/11)** - Complete Gateway configuration
-- ✅ **Spring Events/Kafka (3/3)** - Kafka messaging patterns
-- ✅ **Cloud Native (2/2)** - Docker and native image configurations
-
-### **New Reactive Patterns (3/3)**
-- ✅ **Spring WebFlux** - Reactive web with `Mono`/`Flux`
-- ✅ **Spring Data R2DBC** - Reactive database access
-- ✅ **Reactor Operators** - Complex reactive streams
-
-**This is now the most comprehensive Spring Boot to Quarkus migration example available!** 🚀

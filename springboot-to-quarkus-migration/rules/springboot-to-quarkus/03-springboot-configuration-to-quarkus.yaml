@@ -217,7 +217,7 @@
     After:
     ```properties
     quarkus.smallrye-health.ui.enable=true
-    quarkus.smallrye-metrics.extensions.enabled=true
+    quarkus.micrometer.enabled=true
     # Health details are shown by default in Quarkus
     # Prometheus metrics are available at /q/metrics
     ```

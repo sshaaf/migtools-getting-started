@@ -6,8 +6,8 @@
   - konveyor.io/source=spring-boot
   - konveyor.io/target=quarkus
   links:
-  - title: Quarkus RESTEasy Reactive Guide
-    url: https://quarkus.io/guides/resteasy-reactive
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest
   message: |
     Replace Spring @ResponseStatus with JAX-RS Response for custom HTTP status codes.
     
@@ -55,7 +55,7 @@
   - konveyor.io/source=spring-boot
   - konveyor.io/target=quarkus
   links:
-  - title: Quarkus RESTEasy Guide
+  - title: Quarkus REST Guide
     url: https://quarkus.io/guides/rest-json
   message: |
     Replace Spring content negotiation with JAX-RS @Produces and @Consumes annotations.

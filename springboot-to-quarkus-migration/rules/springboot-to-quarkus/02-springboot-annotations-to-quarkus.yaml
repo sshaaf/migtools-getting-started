@@ -293,7 +293,7 @@
   - title: Quarkus REST Guide
     url: https://quarkus.io/guides/rest-json
   message: |
-    Remove Spring's @RequestBody annotation. In Quarkus with RESTEasy, request bodies are automatically deserialized.
+    Remove Spring's @RequestBody annotation. In Quarkus with REST, request bodies are automatically deserialized.
     
     Before:
     ```java

@@ -133,3 +133,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.id IN (SELECT DISTINCT oi.product.id FROM OrderItem oi)")
     List<Product> findProductsWithOrders();
 }
+

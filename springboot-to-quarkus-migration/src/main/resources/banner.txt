@@ -14,3 +14,4 @@
  Migration Example Application                             
  Version: ${application.version}
  Spring Boot to Quarkus Migration Demonstration
+

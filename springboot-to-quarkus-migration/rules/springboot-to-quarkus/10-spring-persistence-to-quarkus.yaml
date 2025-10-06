@@ -261,4 +261,4 @@
   when:
     java.referenced:
       location: ANNOTATION
-      pattern: javax.persistence.PersistenceContext
+      pattern: jakarta.persistence.PersistenceContext

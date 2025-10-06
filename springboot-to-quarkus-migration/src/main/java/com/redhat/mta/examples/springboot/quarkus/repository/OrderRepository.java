@@ -126,3 +126,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT YEAR(o.createdAt), MONTH(o.createdAt), COUNT(o), SUM(o.totalAmount) FROM Order o WHERE o.status = 'DELIVERED' GROUP BY YEAR(o.createdAt), MONTH(o.createdAt) ORDER BY YEAR(o.createdAt) DESC, MONTH(o.createdAt) DESC")
     List<Object[]> getMonthlySalesReport();
 }
+

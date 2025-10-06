@@ -71,3 +71,5 @@ INSERT INTO user_favorite_products (user_id, product_id) VALUES
 (5, 4), -- jane.smith likes standing desk
 (5, 3), -- jane.smith likes coffee mug
 (5, 8); -- jane.smith likes notebook
+
+
