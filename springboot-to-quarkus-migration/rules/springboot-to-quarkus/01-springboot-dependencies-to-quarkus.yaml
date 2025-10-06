@@ -1,0 +1,310 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Starter Parent with Quarkus BOM
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus - Building applications with Maven Guide
+    url: https://quarkus.io/guides/maven-tooling
+  message: |
+    Replace the Spring Boot parent POM with Quarkus BOM in the `<dependencyManagement>` section.
+    
+    Remove:
+    ```xml
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>...</version>
+    </parent>
+    ```
+    
+    Add to `<dependencyManagement>` section:
+    ```xml
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus.platform</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>3.28.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    ```
+    
+    Also add the Quarkus version property:
+    ```xml
+    <properties>
+        <quarkus.platform.version>3.28.2</quarkus.platform.version>
+    </properties>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20001
+  when:
+    builtin.xml:
+      filepaths:
+      - pom.xml
+      namespaces:
+        m: http://maven.apache.org/POM/4.0.0
+      xpath: /m:project/m:parent[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-starter-parent']
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Web Starter with Quarkus REST extension
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest
+  message: |
+    Replace Spring Boot Web Starter with Quarkus REST extension.
+    
+    Replace:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    ```
+    
+    With:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-rest-jackson</artifactId>
+    </dependency>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20002
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-web
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Data JPA Starter with Quarkus Hibernate ORM extension
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Hibernate ORM Guide
+    url: https://quarkus.io/guides/hibernate-orm
+  message: |
+    Replace Spring Boot Data JPA Starter with Quarkus Hibernate ORM extension.
+    
+    Replace:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    ```
+    
+    With:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm-panache</artifactId>
+    </dependency>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20003
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-data-jpa
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Test Starter with Quarkus Test extension
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Testing Guide
+    url: https://quarkus.io/guides/getting-started-testing
+  message: |
+    Replace Spring Boot Test Starter with Quarkus Test extension.
+    
+    Replace:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+    
+    With:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-junit5</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <scope>test</scope>
+    </dependency>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20004
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-test
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Security Starter with Quarkus Security extension
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide
+    url: https://quarkus.io/guides/security
+  message: |
+    Replace Spring Boot Security Starter with Quarkus Security extension.
+    
+    Replace:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    ```
+    
+    With:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-security</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-elytron-security-properties-file</artifactId>
+    </dependency>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20005
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-security
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Actuator with Quarkus Health and Metrics extensions
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Health Guide
+    url: https://quarkus.io/guides/microprofile-health
+  - title: Quarkus Metrics Guide
+    url: https://quarkus.io/guides/microprofile-metrics
+  message: |
+    Replace Spring Boot Actuator with Quarkus Health and Metrics extensions.
+    
+    Replace:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    ```
+    
+    With:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-micrometer</artifactId>
+    </dependency>
+    ```
+  ruleID: springboot-dependencies-to-quarkus-20006
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-actuator
+
+- category: mandatory
+  customVariables: []
+  description: Add Quarkus Maven Plugin
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Maven Plugin
+    url: https://quarkus.io/guides/maven-tooling
+  message: |
+    Add the Quarkus Maven Plugin to enable Quarkus development mode and native compilation.
+    
+    Add to `<build><plugins>` section:
+    ```xml
+    <plugin>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>build</goal>
+                    <goal>generate-code</goal>
+                    <goal>generate-code-tests</goal>
+                </goals>
+            </execution>
+        </executions>
+    </plugin>
+    ```
+    
+    Note: In Quarkus 3.x, the plugin groupId changed from `io.quarkus` to `io.quarkus.platform`.
+  ruleID: springboot-dependencies-to-quarkus-20007
+  when:
+    builtin.xml:
+      filepaths:
+      - pom.xml
+      namespaces:
+        m: http://maven.apache.org/POM/4.0.0
+      xpath: /m:project/m:build/m:plugins/m:plugin[m:groupId/text() = 'org.springframework.boot' and m:artifactId/text() = 'spring-boot-maven-plugin']
+
+- category: optional
+  customVariables: []
+  description: Replace Spring Boot DevTools with Quarkus Dev Mode
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Development Mode
+    url: https://quarkus.io/guides/maven-tooling#dev-mode
+  message: |
+    Spring Boot DevTools can be replaced with Quarkus Dev Mode.
+    
+    Remove:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    ```
+    
+    Use Quarkus Dev Mode instead: `mvn quarkus:dev`
+  ruleID: springboot-dependencies-to-quarkus-20008
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-devtools

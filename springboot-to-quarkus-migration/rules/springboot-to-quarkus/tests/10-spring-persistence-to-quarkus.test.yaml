@@ -1,0 +1,28 @@
+rulesPath: ../10-spring-persistence-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/data-access
+  - name: builtin
+    dataPath: ./data/data-access
+tests:
+  - ruleID: spring-persistence-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-persistence-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-persistence-to-quarkus-00003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

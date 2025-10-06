@@ -1,0 +1,343 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring ResponseEntity with JAX-RS Response
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's ResponseEntity with JAX-RS Response.
+    
+    Before:
+    ```java
+    @GetMapping("/users/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        User user = userService.findById(id);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
+    }
+    ```
+    
+    After:
+    ```java
+    @GET
+    @Path("/users/{id}")
+    public Response getUser(@PathParam("id") Long id) {
+        User user = userService.findById(id);
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(user).build();
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00001
+  when:
+    java.referenced:
+      pattern: org.springframework.http.ResponseEntity
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @ExceptionHandler with JAX-RS @Provider ExceptionMapper
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide - Exception Handling
+    url: https://quarkus.io/guides/rest-json#exception-handling
+  message: |
+    Replace Spring's @ExceptionHandler with JAX-RS @Provider ExceptionMapper.
+    
+    Before:
+    ```java
+    @ControllerAdvice
+    public class GlobalExceptionHandler {
+        @ExceptionHandler(UserNotFoundException.class)
+        public ResponseEntity<String> handleUserNotFound(UserNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @Provider
+    public class UserNotFoundExceptionMapper implements ExceptionMapper<UserNotFoundException> {
+        @Override
+        public Response toResponse(UserNotFoundException exception) {
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(exception.getMessage())
+                          .build();
+        }
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.ExceptionHandler
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @ControllerAdvice with JAX-RS @Provider
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide - Exception Handling
+    url: https://quarkus.io/guides/rest-json#exception-handling
+  message: |
+    Replace Spring's @ControllerAdvice with JAX-RS @Provider for exception handling.
+    
+    Before:
+    ```java
+    @ControllerAdvice
+    public class GlobalExceptionHandler {
+        // exception handlers
+    }
+    ```
+    
+    After:
+    ```java
+    @Provider
+    public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
+        @Override
+        public Response toResponse(Exception exception) {
+            // handle exception
+            return Response.serverError().build();
+        }
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.ControllerAdvice
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @CrossOrigin with Quarkus CORS configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CORS Guide
+    url: https://quarkus.io/guides/http-reference#cors-filter
+  message: |
+    Replace Spring's @CrossOrigin with Quarkus CORS configuration.
+    
+    Before:
+    ```java
+    @CrossOrigin(origins = "http://localhost:3000")
+    @RestController
+    public class UserController {
+        // controller methods
+    }
+    ```
+    
+    After: Remove @CrossOrigin and add to application.properties:
+    ```properties
+    quarkus.http.cors=true
+    quarkus.http.cors.origins=http://localhost:3000
+    quarkus.http.cors.headers=accept,authorization,content-type,x-requested-with
+    quarkus.http.cors.methods=GET,PUT,POST,DELETE
+    ```
+  ruleID: springboot-web-to-quarkus-00004
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.CrossOrigin
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring HttpStatus with JAX-RS Response.Status
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's HttpStatus with JAX-RS Response.Status.
+    
+    Before:
+    ```java
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    return ResponseEntity.status(HttpStatus.CREATED).body(user);
+    ```
+    
+    After:
+    ```java
+    return Response.status(Response.Status.NOT_FOUND).build();
+    return Response.status(Response.Status.CREATED).entity(user).build();
+    ```
+  ruleID: springboot-web-to-quarkus-00005
+  when:
+    java.referenced:
+      pattern: org.springframework.http.HttpStatus
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @RequestHeader with JAX-RS @HeaderParam
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @RequestHeader with JAX-RS @HeaderParam.
+    
+    Before:
+    ```java
+    public ResponseEntity<?> handleRequest(@RequestHeader("Authorization") String auth) {
+        // handle request
+    }
+    ```
+    
+    After:
+    ```java
+    public Response handleRequest(@HeaderParam("Authorization") String auth) {
+        // handle request
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00006
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.RequestHeader
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @CookieValue with JAX-RS @CookieParam
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @CookieValue with JAX-RS @CookieParam.
+    
+    Before:
+    ```java
+    public ResponseEntity<?> handleRequest(@CookieValue("sessionId") String sessionId) {
+        // handle request
+    }
+    ```
+    
+    After:
+    ```java
+    public Response handleRequest(@CookieParam("sessionId") String sessionId) {
+        // handle request
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00007
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.CookieValue
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @Valid with Bean Validation annotations
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Validation Guide
+    url: https://quarkus.io/guides/validation
+  message: |
+    Replace Spring's @Valid with standard Bean Validation annotations.
+    
+    Before:
+    ```java
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        // create user
+    }
+    ```
+    
+    After:
+    ```java
+    public Response createUser(@Valid User user) {
+        // create user
+    }
+    ```
+    
+    Note: @Valid is from jakarta.validation.Valid in Quarkus 3.x (Jakarta EE namespace).
+  ruleID: springboot-web-to-quarkus-00008
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.validation.annotation.Validated
+
+- category: optional
+  customVariables: []
+  description: Replace Spring WebMvcConfigurer with Quarkus HTTP configuration
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus HTTP Reference
+    url: https://quarkus.io/guides/http-reference
+  message: |
+    Replace Spring WebMvcConfigurer with Quarkus HTTP configuration.
+    
+    Spring WebMvcConfigurer is used for customizing web configuration.
+    In Quarkus, most web configuration is done through application.properties
+    or by implementing JAX-RS interfaces.
+    
+    For custom filters, interceptors, and other web components,
+    use JAX-RS providers and CDI beans instead.
+  ruleID: springboot-web-to-quarkus-00009
+  when:
+    java.referenced:
+      pattern: org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @ModelAttribute with JAX-RS @BeanParam
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @ModelAttribute with JAX-RS @BeanParam for form data binding.
+    
+    Before:
+    ```java
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@ModelAttribute UserForm userForm) {
+        // process form
+    }
+    ```
+    
+    After:
+    ```java
+    @POST
+    @Path("/users")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response createUser(@BeanParam UserForm userForm) {
+        // process form
+    }
+    ```
+  ruleID: springboot-web-to-quarkus-00010
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.ModelAttribute

@@ -1,0 +1,637 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway dependency with Quarkus reactive routes
+  effort: 4
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Routes Guide
+    url: https://quarkus.io/guides/reactive-routes
+  - title: Quarkus Vert.x Guide
+    url: https://quarkus.io/guides/vertx
+  message: |
+    Replace Spring Cloud Gateway with Quarkus reactive routes using Vert.x.
+    
+    Remove:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-gateway</artifactId>
+    </dependency>
+    ```
+    
+    Add:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-vertx-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-reactive-routes</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-rest-client-reactive</artifactId>
+    </dependency>
+    ```
+  ruleID: spring-gateway-to-quarkus-00001
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.cloud.spring-cloud-starter-gateway
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway RouteLocator with Quarkus reactive routes
+  effort: 4
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Routes Guide
+    url: https://quarkus.io/guides/reactive-routes
+  message: |
+    Replace Spring Cloud Gateway RouteLocator with Quarkus reactive routes.
+    
+    Before:
+    ```java
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        return builder.routes()
+            .route("user-service", r -> r.path("/users/**")
+                .uri("http://user-service:8080"))
+            .route("order-service", r -> r.path("/orders/**")
+                .uri("http://order-service:8081"))
+            .build();
+    }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class GatewayRoutes {
+        
+        @Inject
+        @RestClient
+        UserServiceClient userServiceClient;
+        
+        @Inject
+        @RestClient
+        OrderServiceClient orderServiceClient;
+        
+        @Route(path = "/users/*", methods = HttpMethod.GET)
+        public void proxyToUserService(RoutingContext rc) {
+            String path = rc.request().path().substring("/users".length());
+            userServiceClient.proxy(path)
+                .subscribe().with(
+                    response -> rc.response().end(response),
+                    failure -> rc.fail(500, failure)
+                );
+        }
+        
+        @Route(path = "/orders/*", methods = HttpMethod.GET)
+        public void proxyToOrderService(RoutingContext rc) {
+            String path = rc.request().path().substring("/orders".length());
+            orderServiceClient.proxy(path)
+                .subscribe().with(
+                    response -> rc.response().end(response),
+                    failure -> rc.fail(500, failure)
+                );
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00002
+  when:
+    java.referenced:
+      pattern: org.springframework.cloud.gateway.route.RouteLocator
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway filters with Quarkus route filters
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Routes Guide
+    url: https://quarkus.io/guides/reactive-routes
+  message: |
+    Replace Spring Cloud Gateway filters with Quarkus route filters.
+    
+    Before:
+    ```java
+    @Component
+    public class CustomGatewayFilter implements GlobalFilter {
+        @Override
+        public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+            ServerHttpRequest request = exchange.getRequest().mutate()
+                .header("X-Custom-Header", "CustomValue")
+                .build();
+            return chain.filter(exchange.mutate().request(request).build());
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class CustomRouteFilter {
+        
+        @Route(order = 1) // Lower order runs first
+        public void addCustomHeader(RoutingContext rc) {
+            rc.request().headers().add("X-Custom-Header", "CustomValue");
+            rc.next();
+        }
+        
+        // Or use a more specific filter
+        @RouteFilter(100) // Priority-based ordering
+        public void logRequests(RoutingContext rc) {
+            Log.infof("Request: %s %s", rc.request().method(), rc.request().uri());
+            rc.next();
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00003
+  when:
+    java.referenced:
+      pattern: org.springframework.cloud.gateway.filter.GlobalFilter
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway predicates with Quarkus route matching
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Routes Guide
+    url: https://quarkus.io/guides/reactive-routes
+  message: |
+    Replace Spring Cloud Gateway predicates with Quarkus route matching.
+    
+    Before:
+    ```java
+    .route("api-route", r -> r
+        .path("/api/**")
+        .and().header("X-Request-Type", "API")
+        .and().method(HttpMethod.GET)
+        .uri("http://api-service:8080"))
+    ```
+    
+    After:
+    ```java
+    @Route(path = "/api/*", methods = HttpMethod.GET)
+    public void handleApiRequests(RoutingContext rc) {
+        String requestType = rc.request().getHeader("X-Request-Type");
+        if (!"API".equals(requestType)) {
+            rc.fail(400, new IllegalArgumentException("Invalid request type"));
+            return;
+        }
+        
+        // Proxy to api-service
+        apiServiceClient.proxy(rc.request().path())
+            .subscribe().with(
+                response -> rc.response().end(response),
+                failure -> rc.fail(500, failure)
+            );
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00004
+  when:
+    builtin.filecontent:
+      filePattern: .*\.java
+      pattern: \.path\(.*\)\.and\(\)
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway YAML configuration with Quarkus properties
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Configuration Guide
+    url: https://quarkus.io/guides/config
+  message: |
+    Replace Spring Cloud Gateway YAML configuration with Quarkus properties and programmatic routes.
+    
+    Before (application.yml):
+    ```yaml
+    spring:
+      cloud:
+        gateway:
+          routes:
+          - id: user-service
+            uri: http://user-service:8080
+            predicates:
+            - Path=/users/**
+            filters:
+            - StripPrefix=1
+          - id: order-service
+            uri: http://order-service:8081
+            predicates:
+            - Path=/orders/**
+            filters:
+            - AddRequestHeader=X-Gateway, true
+    ```
+    
+    After (application.properties + Java):
+    ```properties
+    # Service URLs
+    quarkus.rest-client.user-service.url=http://user-service:8080
+    quarkus.rest-client.order-service.url=http://order-service:8081
+    
+    # HTTP configuration
+    quarkus.http.port=8080
+    ```
+    
+    ```java
+    @ApplicationScoped
+    public class GatewayRoutes {
+        @Route(path = "/users/*")
+        public void userServiceRoute(RoutingContext rc) {
+            // Strip prefix and proxy
+        }
+        
+        @Route(path = "/orders/*")
+        public void orderServiceRoute(RoutingContext rc) {
+            rc.request().headers().add("X-Gateway", "true");
+            // Proxy to order service
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00005
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(yml|yaml)
+      pattern: spring\.cloud\.gateway
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud LoadBalancer with Quarkus Stork
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Stork Guide
+    url: https://quarkus.io/guides/stork
+  message: |
+    Replace Spring Cloud LoadBalancer with Quarkus Stork for service discovery and load balancing.
+    
+    Remove:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+    </dependency>
+    ```
+    
+    Add:
+    ```xml
+    <dependency>
+        <groupId>io.smallrye.stork</groupId>
+        <artifactId>stork-service-discovery-consul</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.smallrye.stork</groupId>
+        <artifactId>stork-load-balancer-round-robin</artifactId>
+    </dependency>
+    ```
+    
+    Configuration:
+    ```properties
+    # Stork service discovery
+    quarkus.stork.user-service.service-discovery.type=consul
+    quarkus.stork.user-service.service-discovery.consul-host=localhost
+    quarkus.stork.user-service.service-discovery.consul-port=8500
+    quarkus.stork.user-service.load-balancer.type=round-robin
+    
+    # REST Client with Stork
+    quarkus.rest-client.user-service.url=stork://user-service
+    ```
+  ruleID: spring-gateway-to-quarkus-00006
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.cloud.spring-cloud-starter-loadbalancer
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway rate limiting with Quarkus rate limiting
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Rate Limiting Guide
+    url: https://quarkus.io/guides/redis-rate-limiter
+  message: |
+    Replace Spring Cloud Gateway rate limiting with Quarkus rate limiting extension.
+    
+    Before:
+    ```java
+    .route("rate-limited", r -> r.path("/api/**")
+        .filters(f -> f.requestRateLimiter(config -> config
+            .setRateLimiter(redisRateLimiter())
+            .setKeyResolver(userKeyResolver())))
+        .uri("http://api-service:8080"))
+    ```
+    
+    Add dependency:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-redis-rate-limiter</artifactId>
+    </dependency>
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class RateLimitedRoutes {
+        
+        @Route(path = "/api/*")
+        @RateLimit(value = 10, window = "1m", scope = RateLimit.Scope.USER)
+        public void rateLimitedRoute(RoutingContext rc) {
+            // Route handling with automatic rate limiting
+            apiServiceClient.proxy(rc.request().path())
+                .subscribe().with(
+                    response -> rc.response().end(response),
+                    failure -> rc.fail(500, failure)
+                );
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00007
+  when:
+    builtin.filecontent:
+      filePattern: .*\.java
+      pattern: requestRateLimiter
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway circuit breaker with Quarkus fault tolerance
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Fault Tolerance Guide
+    url: https://quarkus.io/guides/microprofile-fault-tolerance
+  message: |
+    Replace Spring Cloud Gateway circuit breaker with Quarkus MicroProfile Fault Tolerance.
+    
+    Before:
+    ```java
+    .route("circuit-breaker", r -> r.path("/api/**")
+        .filters(f -> f.circuitBreaker(config -> config
+            .setName("api-circuit-breaker")
+            .setFallbackUri("forward:/fallback")))
+        .uri("http://api-service:8080"))
+    ```
+    
+    Add dependency:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+    </dependency>
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class FaultTolerantRoutes {
+        
+        @Route(path = "/api/*")
+        public void circuitBreakerRoute(RoutingContext rc) {
+            callApiService(rc.request().path())
+                .subscribe().with(
+                    response -> rc.response().end(response),
+                    failure -> rc.response().end("Fallback response")
+                );
+        }
+        
+        @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 1000)
+        @Fallback(fallbackMethod = "fallback")
+        private Uni<String> callApiService(String path) {
+            return apiServiceClient.proxy(path);
+        }
+        
+        private Uni<String> fallback(String path) {
+            return Uni.createFrom().item("Service temporarily unavailable");
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00008
+  when:
+    builtin.filecontent:
+      filePattern: .*\.java
+      pattern: circuitBreaker
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway security with Quarkus Security
+  effort: 4
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide
+    url: https://quarkus.io/guides/security
+  - title: Quarkus OIDC Guide
+    url: https://quarkus.io/guides/security-openid-connect
+  message: |
+    Replace Spring Cloud Gateway security with Quarkus Security.
+    
+    Before:
+    ```java
+    @EnableWebFluxSecurity
+    public class GatewaySecurityConfig {
+        @Bean
+        public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+            return http
+                .authorizeExchange(exchanges -> exchanges
+                    .pathMatchers("/public/**").permitAll()
+                    .pathMatchers("/admin/**").hasRole("ADMIN")
+                    .anyExchange().authenticated())
+                .oauth2ResourceServer(OAuth2ResourceServerSpec::jwt)
+                .build();
+        }
+    }
+    ```
+    
+    Add dependencies:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-oidc</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-security</artifactId>
+    </dependency>
+    ```
+    
+    After (application.properties):
+    ```properties
+    # OIDC Configuration
+    quarkus.oidc.auth-server-url=https://your-oidc-server/auth/realms/your-realm
+    quarkus.oidc.client-id=gateway-client
+    
+    # Security policies
+    quarkus.http.auth.permission.public.paths=/public/*
+    quarkus.http.auth.permission.public.policy=permit
+    quarkus.http.auth.permission.admin.paths=/admin/*
+    quarkus.http.auth.permission.admin.policy=role-policy
+    quarkus.http.auth.permission.admin.roles=ADMIN
+    quarkus.http.auth.permission.authenticated.paths=/*
+    quarkus.http.auth.permission.authenticated.policy=authenticated
+    ```
+  ruleID: spring-gateway-to-quarkus-00009
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+
+- category: optional
+  customVariables: []
+  description: Replace Spring Cloud Gateway metrics with Quarkus metrics
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Metrics Guide
+    url: https://quarkus.io/guides/microprofile-metrics
+  message: |
+    Replace Spring Cloud Gateway metrics with Quarkus metrics.
+    
+    Add dependency:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-micrometer</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+    ```
+    
+    Configuration:
+    ```properties
+    # Enable metrics
+    quarkus.micrometer.enabled=true
+    quarkus.micrometer.registry-enabled-default=true
+    quarkus.micrometer.export.prometheus.enabled=true
+    ```
+    
+    Custom metrics in routes:
+    ```java
+    @ApplicationScoped
+    public class MetricsRoutes {
+        
+        @Inject
+        MeterRegistry meterRegistry;
+        
+        @Route(path = "/api/*")
+        public void metricsRoute(RoutingContext rc) {
+            Timer.Sample sample = Timer.start(meterRegistry);
+            
+            apiServiceClient.proxy(rc.request().path())
+                .subscribe().with(
+                    response -> {
+                        sample.stop(Timer.builder("gateway.requests")
+                            .tag("service", "api")
+                            .tag("status", "success")
+                            .register(meterRegistry));
+                        rc.response().end(response);
+                    },
+                    failure -> {
+                        sample.stop(Timer.builder("gateway.requests")
+                            .tag("service", "api")
+                            .tag("status", "error")
+                            .register(meterRegistry));
+                        rc.fail(500, failure);
+                    }
+                );
+        }
+    }
+    ```
+  ruleID: spring-gateway-to-quarkus-00010
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: management\.metrics
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Cloud Gateway WebClient with Quarkus REST Client
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-cloud-gateway
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Client Guide
+    url: https://quarkus.io/guides/rest-client-reactive
+  message: |
+    Replace Spring WebClient with Quarkus REST Client for downstream service calls.
+    
+    Before:
+    ```java
+    @Component
+    public class GatewayService {
+        private final WebClient webClient;
+        
+        public GatewayService(WebClient.Builder webClientBuilder) {
+            this.webClient = webClientBuilder.build();
+        }
+        
+        public Mono<String> callDownstreamService(String path) {
+            return webClient.get()
+                .uri("http://downstream-service" + path)
+                .retrieve()
+                .bodyToMono(String.class);
+        }
+    }
+    ```
+    
+    After:
+    ```java
+    @RegisterRestClient(configKey = "downstream-service")
+    public interface DownstreamServiceClient {
+        
+        @GET
+        @Path("/{path}")
+        Uni<String> get(@PathParam("path") String path);
+        
+        @POST
+        @Path("/{path}")
+        Uni<String> post(@PathParam("path") String path, String body);
+    }
+    
+    @ApplicationScoped
+    public class GatewayService {
+        
+        @Inject
+        @RestClient
+        DownstreamServiceClient downstreamClient;
+        
+        public Uni<String> callDownstreamService(String path) {
+            return downstreamClient.get(path);
+        }
+    }
+    ```
+    
+    Configuration:
+    ```properties
+    quarkus.rest-client.downstream-service.url=http://downstream-service
+    ```
+  ruleID: spring-gateway-to-quarkus-00011
+  when:
+    java.referenced:
+      pattern: org.springframework.web.reactive.function.client.WebClient

@@ -1,0 +1,77 @@
+rulesPath: ../07-springboot-security-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/security
+  - name: builtin
+    dataPath: ./data/security
+tests:
+  - ruleID: springboot-security-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00004
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00005
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00006
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00007
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00008
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00009
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-security-to-quarkus-00010
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

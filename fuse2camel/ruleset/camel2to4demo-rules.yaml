@@ -1,0 +1,322 @@
+- category: mandatory
+  customVariables:
+  - name: registry
+    nameOfCaptureGroup: registry
+    pattern: org.apache.camel.impl.(?P<registry>(PropertyPlaceholderDelegateRegistry|CompositeRegistry))
+  description: 'Classes under org.apache.camel.impl have been removed'
+  effort: 1
+  labels:
+  - konveyor.io/source=camel2
+  - konveyor.io/source=camel
+  - konveyor.io/target=camel3+
+  - konveyor.io/target=camel
+  links: []
+  message: |
+    The class `org.apache.camel.impl.{{registry}}` has been removed in Camel 3. Use `org.apache.camel.support.DefaultRegistry` instead.
+
+    **How to fix:**  
+    Replace imports and usage of `org.apache.camel.impl.PropertyPlaceholderDelegateRegistry` or `org.apache.camel.impl.CompositeRegistry` with `org.apache.camel.support.DefaultRegistry`.
+
+    **Example before (Camel 2):**
+    ```java
+    import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
+
+    PropertyPlaceholderDelegateRegistry registry = new PropertyPlaceholderDelegateRegistry();
+    registry.addRegistry(someOtherRegistry);
+    ```
+
+    **Example after (Camel 3+):**
+    ```java
+    import org.apache.camel.support.DefaultRegistry;
+
+    DefaultRegistry registry = new DefaultRegistry();
+    registry.bind("someKey", someValue, SomeClass.class); // Use bind() instead of addRegistry()
+    ```
+
+    💡 **Note:** `DefaultRegistry` implements `CamelRegistry` and supports registration via `bind()` and lookup via `lookup()`. If you were stacking registries, consider using dependency injection or configuring the registry contents directly.
+  ruleID: java-generic-information-00004
+  when:
+    as: javaClass
+    java.referenced:
+      location: IMPORT
+      pattern: org.apache.camel.impl.(PropertyPlaceholderDelegateRegistry|CompositeRegistry)
+
+- category: mandatory
+  customVariables: []
+  description: camel-activemq component has been removed
+  effort: 7
+  labels:
+    - konveyor.io/source=camel3
+    - konveyor.io/source=camel
+    - konveyor.io/target=camel4+
+    - konveyor.io/target=camel
+  links:
+    - title: 'Camel 4 - Migration Guide: Removed components'
+      url: https://camel.apache.org/manual/camel-4-migration-guide.html#_removed_components
+  message: |
+    The `camel-activemq` component has been removed in Apache Camel 4.0. Use alternative messaging components such as `camel-jms`, `camel-sjms`, or `camel-amqp` instead.
+
+    **How to fix:**  
+    Replace usage of `camel-activemq` with `camel-jms` (for general JMS compatibility) or `camel-sjms` (Simple JMS, Camel’s lightweight JMS abstraction). If you're connecting to an AMQP-based broker, consider `camel-amqp`.
+
+    **Example before (Camel 3 - XML):**
+    ```xml
+    <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-activemq</artifactId>
+    </dependency>
+    ```
+
+    ```xml
+    <route>
+        <from uri="activemq:queue:orders"/>
+        <to uri="bean:processOrder"/>
+    </route>
+    ```
+
+    **Example after (Camel 4 - XML) using `camel-jms`:**
+    ```xml
+    <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-jms</artifactId>
+    </dependency>
+    <!-- Include your JMS provider (e.g., ActiveMQ 5.x or 6.x client) -->
+    <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>activemq-client</artifactId>
+        <version>5.17.6</version>
+    </dependency>
+    ```
+
+    ```xml
+    <!-- Configure JMS component -->
+    <bean id="jms" class="org.apache.camel.component.jms.JmsComponent">
+        <property name="connectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                <property name="brokerURL" value="tcp://localhost:61616"/>
+            </bean>
+        </property>
+    </bean>
+
+    <route>
+        <from uri="jms:queue:orders"/>
+        <to uri="bean:processOrder"/>
+    </route>
+    ```
+
+    **Alternative using `camel-sjms` (Simple JMS):**
+    ```xml
+    <dependency>
+        <groupId>org.apache.camel</groupId>
+        <artifactId>camel-sjms</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>activemq-pool</artifactId>
+        <version>5.17.6</version>
+    </dependency>
+    ```
+
+    ```java
+    // In Java DSL
+    from("sjms:queue:orders")
+        .to("bean:processOrder");
+    ```
+
+    💡 **Tips:**
+    - `camel-jms` is ideal if you need full JMS feature support.
+    - `camel-sjms` provides a simpler, more lightweight API with lower overhead.
+    - For AMQP 1.0 brokers (e.g., ActiveMQ Artemis, Azure Service Bus), use `camel-amqp` with an AMQP-capable client.
+    - Update your connection factory and pooling configuration accordingly.
+  ruleID: xml-removed-camel4-00001
+  when:
+    or:
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.apache.camel.camel-activemq
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.apache.camel.camel-activemq
+
+- ruleID: camel4-properties-component-removal-001
+  description: "Detects usage of the removed PropertiesComponent class in Camel 4"
+  category: mandatory
+  effort: 2
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: "org.apache.camel.component.properties.PropertiesComponent"
+  message: |
+    The class `org.apache.camel.component.properties.PropertiesComponent` has been removed in Apache Camel 4. Use `org.apache.camel.builder.component.ComponentsBuilderFactory` to configure property placeholders instead.
+
+    **How to fix:**  
+    In Camel 4, direct instantiation of `PropertiesComponent` is no longer supported. Instead, use `ComponentsBuilderFactory.properties()` to configure property resolution via the component builder API.
+
+    **Example before (Camel 3):**
+    ```java
+    import org.apache.camel.component.properties.PropertiesComponent;
+
+    PropertiesComponent properties = new PropertiesComponent();
+    properties.setLocation("classpath:application.properties");
+    camelContext.addComponent("properties", properties);
+    ```
+
+    **Example after (Camel 4+):**
+    ```java
+    import org.apache.camel.builder.component.ComponentsBuilderFactory;
+
+    var propertiesComponent = ComponentsBuilderFactory
+        .properties()
+        .location("classpath:application.properties")
+        .build();
+
+    camelContext.addComponent("properties", propertiesComponent);
+    ```
+
+    Alternatively, if using **Spring Boot**, configure via `application.properties` or `application.yml`:
+    ```properties
+    camel.component.properties.location=classpath:application.properties
+    ```
+
+    💡 **Notes:**
+    - The new builder pattern aligns with Camel 4’s push toward immutable component configuration.
+    - Multiple locations can be set using `.location("classpath:a.properties,classpath:b.properties")`.
+    - This change improves consistency across components and supports better integration with CDI, Spring, and Quarkus.
+
+    For more details, see the [Camel 4 Migration Guide - Properties](https://camel.apache.org/manual/camel-4-migration-guide.html#_properties).
+  labels:
+    - "konveyor.io/source=camel"
+    - "konveyor.io/target=camel4+"
+    - "konveyor.io/source=camel3"
+    - "konveyor.io/target=camel"
+
+- ruleID: kafka-component-migration-001
+  description: "Detects direct instantiation of KafkaComponent and suggests migration to ComponentsBuilderFactory"
+  category: mandatory
+  effort: 2
+  when:
+    java.referenced:
+      location: CONSTRUCTOR_CALL
+      pattern: "org.apache.camel.component.kafka.KafkaComponent"
+  message: |
+    Direct instantiation of `KafkaComponent` using `new KafkaComponent()` is no longer recommended in Apache Camel 4. Use `ComponentsBuilderFactory.kafka()` to create and configure the Kafka component in a type-safe, declarative way that integrates with Camel’s lifecycle and configuration model.
+
+    **How to fix:**  
+    Replace manual instantiation with the component builder API. This ensures proper initialization, immutability, and compatibility with Camel 4's modular architecture.
+
+    **Example before (Camel 3):**
+    ```java
+    import org.apache.camel.component.kafka.KafkaComponent;
+
+    KafkaComponent kafka = new KafkaComponent();
+    kafka.setBrokers("localhost:9092");
+    kafka.setConfiguration(myKafkaConfiguration());
+    camelContext.addComponent("kafka", kafka);
+    ```
+
+    **Example after (Camel 4+):**
+    ```java
+    import org.apache.camel.builder.component.ComponentsBuilderFactory;
+
+    var kafkaComponent = ComponentsBuilderFactory
+        .kafka()
+        .brokers("localhost:9092")
+        // Optional: set additional properties
+        .configuration(myKafkaConfiguration())
+        .build();
+
+    camelContext.addComponent("kafka", kafkaComponent);
+    ```
+
+    **Alternative: Configuration via `application.properties` (recommended for Spring Boot/Quarkus):**
+    ```properties
+    camel.component.kafka.brokers=localhost:9092
+    camel.component.kafka.configuration.auto-offset-reset=earliest
+    camel.component.kafka.use-continuous-polling=true
+    ```
+
+    💡 **Notes:**
+    - The `ComponentsBuilderFactory` approach aligns with Camel 4’s move toward immutable, functional component configuration.
+    - Avoid mixing low-level Kafka clients (`KafkaProducer`, `KafkaConsumer`) with Camel routes unless absolutely necessary.
+    - If you're using XML or YAML DSL, the Kafka component is auto-configured when present on the classpath — no need for explicit registration.
+    - This change improves consistency across components and supports better integration with CDI, Spring, and Quarkus.
+
+    For more details, see the [Camel Kafka Component Documentation](https://camel.apache.org/components/4.x/kafka-component.html).
+  labels:
+    - "konveyor.io/source=camel"
+    - "konveyor.io/target=camel4+"
+    - "konveyor.io/source=camel3"
+    - "konveyor.io/target=camel"
+
+- ruleID: xml-changed-camel41-00008
+  description: "Detects usage of the deprecated `CamelAwsStateMachineExecutionArn` header and suggests migration to `CamelAwsStepFunctionsExecutionArn`"
+  category: mandatory
+  effort: 1
+  labels:
+    - konveyor.io/source=camel
+    - konveyor.io/target=camel4.1+
+    - konveyor.io/target=camel
+  links:
+    - title: Camel 4.1 - Camel AWS Step Functions
+      url: https://camel.apache.org/manual/camel-4x-upgrade-guide-4_1.html#_camel_aws2_step_functions
+  message: |
+    The message header `CamelAwsStateMachineExecutionArn` has been renamed to `CamelAwsStepFunctionsExecutionArn` in Apache Camel 4.1 to align with consistent naming across the AWS2 Step Functions component.
+
+    **How to fix:**  
+    Replace all occurrences of the old header name with the new one in Java, XML (Spring/Blueprint), or YAML DSL.
+
+    **Example before (Java DSL):**
+    ```java
+    from("direct:start")
+        .setHeader("CamelAwsStateMachineExecutionArn", constant("arn:aws:states:..."))
+        .to("aws2-step-functions://myStateMachine?operation=startExecution");
+    ```
+
+    **Example after (Java DSL):**
+    ```java
+    from("direct:start")
+        .setHeader("CamelAwsStepFunctionsExecutionArn", constant("arn:aws:states:..."))
+        .to("aws2-step-functions://myStateMachine?operation=startExecution");
+    ```
+
+    **Example before (Spring XML):**
+    ```xml
+    <route>
+        <from uri="direct:listExecutions"/>
+        <setHeader headerName="CamelAwsStateMachineExecutionArn">
+            <constant>arn:aws:states:...</constant>
+        </setHeader>
+        <to uri="aws2-step-functions://test?operation=listExecutions"/>
+    </route>
+    ```
+
+    **Example after (Spring XML):**
+    ```xml
+    <route>
+        <from uri="direct:listExecutions"/>
+        <setHeader headerName="CamelAwsStepFunctionsExecutionArn">
+            <constant>arn:aws:states:...</constant>
+        </setHeader>
+        <to uri="aws2-step-functions://test?operation=listExecutions"/>
+    </route>
+    ```
+
+    💡 **Notes:**
+    - This change is part of Camel 4.1's effort to standardize AWS2 component header names.
+    - If you're using constants from `StepFunctions2Constants`, no change is required — the constant values have been updated automatically.
+    - Other headers like `CamelAwsStateMachineOperation` have also been renamed (e.g., to `CamelAwsStepFunctionsOperation`).
+
+    For a full list of renamed headers, see the [Camel 4.1 Upgrade Guide - AWS Step Functions](https://camel.apache.org/manual/camel-4x-upgrade-guide-4_1.html#_camel_aws2_step_functions).
+  when:
+    or:
+      - builtin.filecontent:
+          filePattern: .*\.java
+          pattern: setHeader\("CamelAwsStateMachineExecutionArn.*
+      - builtin.xml:
+          namespaces:
+            c: http://camel.apache.org/schema/blueprint
+          xpath: //*/c:setHeader/@headerName[matches(self::node(), 'CamelAwsStateMachineExecutionArn')]
+      - builtin.xml:
+          namespaces:
+            c: http://camel.apache.org/schema/spring
+          xpath: //*/c:setHeader/@headerName[matches(self::node(), 'CamelAwsStateMachineExecutionArn')]

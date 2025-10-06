@@ -1,0 +1,291 @@
+- category: mandatory
+  customVariables: []
+  description: Convert Spring Boot application.properties to Quarkus format
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Configuration Guide
+    url: https://quarkus.io/guides/config
+  message: |
+    Spring Boot application.properties needs to be converted to Quarkus format.
+    Many properties have different names in Quarkus.
+    
+    Common conversions:
+    - `server.port` → `quarkus.http.port`
+    - `server.servlet.context-path` → `quarkus.http.root-path`
+    - `spring.datasource.url` → `quarkus.datasource.jdbc.url`
+    - `spring.datasource.username` → `quarkus.datasource.username`
+    - `spring.datasource.password` → `quarkus.datasource.password`
+    - `spring.datasource.driver-class-name` → `quarkus.datasource.db-kind`
+    
+    Review all properties and convert to Quarkus equivalents.
+  ruleID: springboot-configuration-to-quarkus-00001
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: server\.port|spring\.datasource|spring\.jpa
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring profiles with Quarkus profiles
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Configuration Profiles
+    url: https://quarkus.io/guides/config-reference#configuration-profiles
+  message: |
+    Spring Boot profile-specific files need to be converted to Quarkus profile format.
+    
+    Spring Boot uses separate files like:
+    - `application-dev.properties`
+    - `application-prod.properties`
+    
+    Quarkus uses profile prefixes in a single file:
+    ```properties
+    # Default configuration
+    quarkus.http.port=8080
+    
+    # Dev profile
+    %dev.quarkus.http.port=8081
+    
+    # Prod profile  
+    %prod.quarkus.http.port=80
+    ```
+    
+    Consolidate profile-specific files into the main application.properties with profile prefixes.
+  ruleID: springboot-configuration-to-quarkus-00002
+  when:
+    builtin.file:
+      pattern: application-.+\.(properties|yml|yaml)
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring datasource configuration with Quarkus datasource configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Datasource Guide
+    url: https://quarkus.io/guides/datasource
+  message: |
+    Replace Spring Boot datasource configuration with Quarkus datasource configuration.
+    
+    Before:
+    ```properties
+    spring.datasource.url=jdbc:postgresql://localhost:5432/mydb
+    spring.datasource.username=user
+    spring.datasource.password=password
+    spring.datasource.driver-class-name=org.postgresql.Driver
+    ```
+    
+    After:
+    ```properties
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydb
+    quarkus.datasource.username=user
+    quarkus.datasource.password=password
+    ```
+  ruleID: springboot-configuration-to-quarkus-00003
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: spring\.datasource
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring JPA configuration with Quarkus Hibernate ORM configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Hibernate ORM Guide
+    url: https://quarkus.io/guides/hibernate-orm
+  message: |
+    Replace Spring JPA configuration with Quarkus Hibernate ORM configuration.
+    
+    Before:
+    ```properties
+    spring.jpa.hibernate.ddl-auto=update
+    spring.jpa.show-sql=true
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+    ```
+    
+    After:
+    ```properties
+    quarkus.hibernate-orm.database.generation=update
+    quarkus.hibernate-orm.log.sql=true
+    # Dialect is auto-detected in Quarkus
+    ```
+  ruleID: springboot-configuration-to-quarkus-00004
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: spring\.jpa
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring logging configuration with Quarkus logging configuration
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Logging Guide
+    url: https://quarkus.io/guides/logging
+  message: |
+    Replace Spring logging configuration with Quarkus logging configuration.
+    
+    Before:
+    ```properties
+    logging.level.org.springframework=DEBUG
+    logging.level.com.mycompany=INFO
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+    ```
+    
+    After:
+    ```properties
+    quarkus.log.category."org.springframework".level=DEBUG
+    quarkus.log.category."com.mycompany".level=INFO
+    quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss} - %s%e%n
+    ```
+  ruleID: springboot-configuration-to-quarkus-00005
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: logging\.level
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring server configuration with Quarkus HTTP configuration
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus HTTP Reference
+    url: https://quarkus.io/guides/http-reference
+  message: |
+    Replace Spring server configuration with Quarkus HTTP configuration.
+    
+    Before:
+    ```properties
+    server.port=8080
+    server.servlet.context-path=/api
+    server.compression.enabled=true
+    ```
+    
+    After:
+    ```properties
+    quarkus.http.port=8080
+    quarkus.http.root-path=/api
+    quarkus.http.enable-compression=true
+    ```
+  ruleID: springboot-configuration-to-quarkus-00006
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: server\.
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Actuator configuration with Quarkus Health and Metrics configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Health Guide
+    url: https://quarkus.io/guides/microprofile-health
+  - title: Quarkus Metrics Guide
+    url: https://quarkus.io/guides/microprofile-metrics
+  message: |
+    Replace Spring Actuator configuration with Quarkus Health and Metrics configuration.
+    
+    Before:
+    ```properties
+    management.endpoints.web.exposure.include=health,info,metrics
+    management.endpoint.health.show-details=always
+    management.metrics.export.prometheus.enabled=true
+    ```
+    
+    After:
+    ```properties
+    quarkus.smallrye-health.ui.enable=true
+    quarkus.micrometer.enabled=true
+    # Health details are shown by default in Quarkus
+    # Prometheus metrics are available at /q/metrics
+    ```
+  ruleID: springboot-configuration-to-quarkus-00007
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: management\.
+
+- category: optional
+  customVariables: []
+  description: Replace Spring Boot banner configuration with Quarkus banner configuration
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Configuration Guide
+    url: https://quarkus.io/guides/config
+  message: |
+    Replace Spring Boot banner configuration with Quarkus banner configuration.
+    
+    Before:
+    ```properties
+    spring.banner.location=classpath:banner.txt
+    spring.main.banner-mode=console
+    ```
+    
+    After:
+    ```properties
+    quarkus.banner.enabled=true
+    # Place banner.txt in src/main/resources/
+    ```
+  ruleID: springboot-configuration-to-quarkus-00008
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: spring\.banner
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Security configuration with Quarkus Security configuration
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Security Guide
+    url: https://quarkus.io/guides/security
+  message: |
+    Replace Spring Security configuration with Quarkus Security configuration.
+    
+    Before:
+    ```properties
+    spring.security.user.name=admin
+    spring.security.user.password=secret
+    spring.security.user.roles=ADMIN
+    ```
+    
+    After:
+    ```properties
+    quarkus.security.users.embedded.enabled=true
+    quarkus.security.users.embedded.plain-text=true
+    quarkus.security.users.embedded.users.admin=secret
+    quarkus.security.users.embedded.roles.admin=ADMIN
+    ```
+  ruleID: springboot-configuration-to-quarkus-00009
+  when:
+    builtin.filecontent:
+      filePattern: application.*\.(properties|yml|yaml)
+      pattern: spring\.security

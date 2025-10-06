@@ -1,0 +1,78 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /springboot2-migration
+
+spring:
+  application:
+    name: springboot2-migration
+  
+  # Database configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/springboot2_migration
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    
+  # Cache configuration (deprecated patterns)
+  cache:
+    type: simple
+    
+  # Actuator configuration (deprecated patterns)
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    endpoint:
+      health:
+        show-details: always
+
+# Hystrix configuration (deprecated)
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000
+      circuitBreaker:
+        requestVolumeThreshold: 10
+        errorThresholdPercentage: 50
+        sleepWindowInMilliseconds: 10000
+
+# Ribbon configuration (deprecated)
+ribbon:
+  eureka:
+    enabled: false
+  ReadTimeout: 5000
+  ConnectTimeout: 3000
+
+# Zuul configuration (deprecated)
+zuul:
+  routes:
+    users:
+      path: /api/users/**
+      url: http://localhost:8081/users
+  retryable: true
+  
+# Logging configuration
+logging:
+  level:
+    com.redhat.mta.examples.springboot2.migration: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/springboot2-migration.log

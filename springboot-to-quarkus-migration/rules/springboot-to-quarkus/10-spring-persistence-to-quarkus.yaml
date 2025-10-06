@@ -1,0 +1,264 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data JPA Specifications with Panache queries
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Custom Queries
+    url: https://quarkus.io/guides/hibernate-orm-panache#custom-queries
+  message: |
+    Replace Spring Data JPA Specifications with Panache queries for dynamic queries.
+    
+    Before (Spring Boot):
+    ```java
+    @Repository
+    public interface HeroRepository extends JpaRepository<Hero, Long>, JpaSpecificationExecutor<Hero> {
+    }
+    
+    public class HeroSpecifications {
+        public static Specification<Hero> hasName(String name) {
+            return (root, query, criteriaBuilder) ->
+                criteriaBuilder.like(criteriaBuilder.upper(root.get("name")), 
+                    "%" + name.toUpperCase() + "%");
+        }
+        
+        public static Specification<Hero> hasMinLevel(int level) {
+            return (root, query, criteriaBuilder) ->
+                criteriaBuilder.greaterThanOrEqualTo(root.get("level"), level);
+        }
+    }
+    
+    // Usage
+    Specification<Hero> spec = Specification.where(hasName("super"))
+        .and(hasMinLevel(5));
+    List<Hero> heroes = heroRepository.findAll(spec);
+    ```
+    
+    After (Quarkus Panache):
+    ```java
+    @ApplicationScoped
+    public class HeroRepository implements PanacheRepository<Hero> {
+        
+        public List<Hero> findByNameAndLevel(String name, Integer minLevel) {
+            PanacheQuery<Hero> query = find("1=1");
+            
+            if (name != null && !name.isEmpty()) {
+                query = query.filter("name", Parameters.with("name", "%" + name + "%"));
+            }
+            
+            if (minLevel != null) {
+                query = query.filter("level", Parameters.with("level", minLevel));
+            }
+            
+            return query.list();
+        }
+        
+        // Or using string-based queries
+        public List<Hero> findByCriteria(String name, Integer minLevel) {
+            StringBuilder queryStr = new StringBuilder("1=1");
+            Map<String, Object> params = new HashMap<>();
+            
+            if (name != null && !name.isEmpty()) {
+                queryStr.append(" and upper(name) like upper(:name)");
+                params.put("name", "%" + name + "%");
+            }
+            
+            if (minLevel != null) {
+                queryStr.append(" and level >= :level");
+                params.put("level", minLevel);
+            }
+            
+            return find(queryStr.toString(), params).list();
+        }
+    }
+    ```
+  ruleID: spring-persistence-to-quarkus-00001
+  when:
+    java.referenced:
+      pattern: org.springframework.data.jpa.domain.Specification
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data JPA Auditing with Panache lifecycle callbacks
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide
+    url: https://quarkus.io/guides/hibernate-orm-panache
+  message: |
+    Replace Spring Data JPA Auditing with Panache lifecycle callbacks.
+    
+    Before (Spring Boot):
+    ```java
+    @Entity
+    @EntityListeners(AuditingEntityListener.class)
+    public class Hero {
+        @Id
+        @GeneratedValue
+        private Long id;
+        
+        private String name;
+        private int level;
+        
+        @CreatedDate
+        private LocalDateTime createdDate;
+        
+        @LastModifiedDate
+        private LocalDateTime lastModifiedDate;
+        
+        @CreatedBy
+        private String createdBy;
+        
+        @LastModifiedBy
+        private String lastModifiedBy;
+    }
+    
+    @Configuration
+    @EnableJpaAuditing
+    public class AuditConfig {
+        @Bean
+        public AuditorAware<String> auditorProvider() {
+            return () -> Optional.of("system");
+        }
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @Entity
+    public class Hero extends PanacheEntity {
+        public String name;
+        public int level;
+        
+        @Column(name = "created_date")
+        public LocalDateTime createdDate;
+        
+        @Column(name = "last_modified_date")
+        public LocalDateTime lastModifiedDate;
+        
+        @Column(name = "created_by")
+        public String createdBy;
+        
+        @Column(name = "last_modified_by")
+        public String lastModifiedBy;
+        
+        @PrePersist
+        public void prePersist() {
+            createdDate = LocalDateTime.now();
+            lastModifiedDate = LocalDateTime.now();
+            createdBy = getCurrentUser();
+            lastModifiedBy = getCurrentUser();
+        }
+        
+        @PreUpdate
+        public void preUpdate() {
+            lastModifiedDate = LocalDateTime.now();
+            lastModifiedBy = getCurrentUser();
+        }
+        
+        private String getCurrentUser() {
+            // Get current user from security context
+            return "system"; // placeholder
+        }
+    }
+    ```
+  ruleID: spring-persistence-to-quarkus-00002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.data.jpa.config.EnableJpaAuditing
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data JPA custom repository implementations with Panache
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide
+    url: https://quarkus.io/guides/hibernate-orm-panache
+  message: |
+    Replace Spring Data JPA custom repository implementations with Panache repository methods.
+    
+    Before (Spring Boot):
+    ```java
+    public interface HeroRepositoryCustom {
+        List<Hero> findHeroesWithComplexLogic(String name, int level);
+    }
+    
+    @Repository
+    public class HeroRepositoryImpl implements HeroRepositoryCustom {
+        
+        @PersistenceContext
+        private EntityManager entityManager;
+        
+        @Override
+        public List<Hero> findHeroesWithComplexLogic(String name, int level) {
+            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+            CriteriaQuery<Hero> query = cb.createQuery(Hero.class);
+            Root<Hero> hero = query.from(Hero.class);
+            
+            List<Predicate> predicates = new ArrayList<>();
+            
+            if (name != null) {
+                predicates.add(cb.like(cb.upper(hero.get("name")), 
+                    "%" + name.toUpperCase() + "%"));
+            }
+            
+            if (level > 0) {
+                predicates.add(cb.greaterThanOrEqualTo(hero.get("level"), level));
+            }
+            
+            query.where(predicates.toArray(new Predicate[0]));
+            return entityManager.createQuery(query).getResultList();
+        }
+    }
+    
+    public interface HeroRepository extends JpaRepository<Hero, Long>, HeroRepositoryCustom {
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @ApplicationScoped
+    public class HeroRepository implements PanacheRepository<Hero> {
+        
+        public List<Hero> findHeroesWithComplexLogic(String name, int level) {
+            StringBuilder query = new StringBuilder("1=1");
+            Map<String, Object> params = new HashMap<>();
+            
+            if (name != null && !name.isEmpty()) {
+                query.append(" and upper(name) like upper(:name)");
+                params.put("name", "%" + name + "%");
+            }
+            
+            if (level > 0) {
+                query.append(" and level >= :level");
+                params.put("level", level);
+            }
+            
+            return find(query.toString(), params).list();
+        }
+        
+        // Alternative using EntityManager for complex queries
+        @Inject
+        EntityManager em;
+        
+        public List<Hero> findHeroesWithNativeQuery(String name) {
+            return em.createNativeQuery(
+                "SELECT * FROM Hero h WHERE h.name ILIKE :name", Hero.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
+        }
+    }
+    ```
+  ruleID: spring-persistence-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: jakarta.persistence.PersistenceContext

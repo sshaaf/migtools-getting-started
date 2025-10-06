@@ -1,0 +1,28 @@
+rulesPath: ../13-spring-reactive-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/reactive
+  - name: builtin
+    dataPath: ./data/reactive
+tests:
+  - ruleID: spring-reactive-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-reactive-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-reactive-to-quarkus-00003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 4

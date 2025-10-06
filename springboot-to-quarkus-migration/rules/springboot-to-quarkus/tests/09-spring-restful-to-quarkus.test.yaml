@@ -1,0 +1,35 @@
+rulesPath: ../09-spring-restful-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/annotations
+  - name: builtin
+    dataPath: ./data/annotations
+tests:
+  - ruleID: spring-restful-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 2
+  - ruleID: spring-restful-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-restful-to-quarkus-00003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-restful-to-quarkus-00004
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

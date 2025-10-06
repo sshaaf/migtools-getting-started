@@ -1,0 +1,302 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Kafka with Quarkus Reactive Messaging Kafka
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Kafka Guide
+    url: https://quarkus.io/guides/kafka
+  - title: Quarkus for Spring Developers - Chapter 5
+    url: https://github.com/quarkus-for-spring-developers/examples/tree/main/chapter-5
+  message: |
+    Replace Spring Kafka with Quarkus Reactive Messaging Kafka for event-driven services.
+    
+    Replace dependency:
+    ```xml
+    <!-- Remove -->
+    <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+    </dependency>
+    
+    <!-- Add -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    </dependency>
+    ```
+    
+    Before (Spring Boot):
+    ```java
+    @Service
+    public class HeroEventProducer {
+        
+        @Autowired
+        private KafkaTemplate<String, HeroEvent> kafkaTemplate;
+        
+        public void sendHeroEvent(HeroEvent event) {
+            kafkaTemplate.send("hero-events", event.getHeroId().toString(), event);
+        }
+    }
+    
+    @Component
+    public class HeroEventConsumer {
+        
+        @KafkaListener(topics = "hero-events", groupId = "hero-service")
+        public void handleHeroEvent(HeroEvent event) {
+            System.out.println("Received hero event: " + event);
+        }
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @ApplicationScoped
+    public class HeroEventProducer {
+        
+        @Channel("hero-events-out")
+        Emitter<HeroEvent> heroEventEmitter;
+        
+        public void sendHeroEvent(HeroEvent event) {
+            heroEventEmitter.send(event);
+        }
+        
+        // Or using reactive approach
+        public Uni<Void> sendHeroEventAsync(HeroEvent event) {
+            return heroEventEmitter.send(event);
+        }
+    }
+    
+    @ApplicationScoped
+    public class HeroEventConsumer {
+        
+        @Incoming("hero-events-in")
+        public CompletionStage<Void> handleHeroEvent(HeroEvent event) {
+            System.out.println("Received hero event: " + event);
+            return CompletableFuture.completedFuture(null);
+        }
+        
+        // Or using Uni for reactive processing
+        @Incoming("hero-events-in")
+        public Uni<Void> handleHeroEventReactive(HeroEvent event) {
+            return Uni.createFrom().item(() -> {
+                System.out.println("Received hero event: " + event);
+                return null;
+            });
+        }
+    }
+    ```
+    
+    Configuration (application.properties):
+    ```properties
+    # Outgoing channel configuration
+    mp.messaging.outgoing.hero-events-out.connector=smallrye-kafka
+    mp.messaging.outgoing.hero-events-out.topic=hero-events
+    mp.messaging.outgoing.hero-events-out.key.serializer=org.apache.kafka.common.serialization.StringSerializer
+    mp.messaging.outgoing.hero-events-out.value.serializer=io.quarkus.kafka.client.serialization.JsonbSerializer
+    
+    # Incoming channel configuration
+    mp.messaging.incoming.hero-events-in.connector=smallrye-kafka
+    mp.messaging.incoming.hero-events-in.topic=hero-events
+    mp.messaging.incoming.hero-events-in.group.id=hero-service
+    mp.messaging.incoming.hero-events-in.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+    mp.messaging.incoming.hero-events-in.value.deserializer=io.quarkus.kafka.client.serialization.JsonbDeserializer
+    mp.messaging.incoming.hero-events-in.value.deserializer.type=com.example.HeroEvent
+    ```
+  ruleID: spring-events-to-quarkus-00001
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.kafka.spring-kafka
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @EventListener with CDI @Observes
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CDI Guide - Events
+    url: https://quarkus.io/guides/cdi#events
+  message: |
+    Replace Spring @EventListener with CDI @Observes for application events.
+    
+    Before (Spring Boot):
+    ```java
+    // Event class
+    public class HeroCreatedEvent {
+        private final Hero hero;
+        private final LocalDateTime timestamp;
+        
+        public HeroCreatedEvent(Hero hero) {
+            this.hero = hero;
+            this.timestamp = LocalDateTime.now();
+        }
+        // getters...
+    }
+    
+    // Event publisher
+    @Service
+    public class HeroService {
+        
+        @Autowired
+        private ApplicationEventPublisher eventPublisher;
+        
+        public Hero createHero(Hero hero) {
+            Hero savedHero = heroRepository.save(hero);
+            eventPublisher.publishEvent(new HeroCreatedEvent(savedHero));
+            return savedHero;
+        }
+    }
+    
+    // Event listener
+    @Component
+    public class HeroEventHandler {
+        
+        @EventListener
+        public void handleHeroCreated(HeroCreatedEvent event) {
+            System.out.println("Hero created: " + event.getHero().getName());
+        }
+        
+        @EventListener
+        @Async
+        public void handleHeroCreatedAsync(HeroCreatedEvent event) {
+            // Async processing
+            processHeroCreation(event.getHero());
+        }
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    // Event class (no changes needed)
+    public class HeroCreatedEvent {
+        private final Hero hero;
+        private final LocalDateTime timestamp;
+        
+        public HeroCreatedEvent(Hero hero) {
+            this.hero = hero;
+            this.timestamp = LocalDateTime.now();
+        }
+        // getters...
+    }
+    
+    // Event publisher
+    @ApplicationScoped
+    public class HeroService {
+        
+        @Inject
+        Event<HeroCreatedEvent> heroCreatedEvent;
+        
+        @Transactional
+        public Hero createHero(Hero hero) {
+            heroRepository.persist(hero);
+            heroCreatedEvent.fire(new HeroCreatedEvent(hero));
+            return hero;
+        }
+    }
+    
+    // Event listener
+    @ApplicationScoped
+    public class HeroEventHandler {
+        
+        public void handleHeroCreated(@Observes HeroCreatedEvent event) {
+            System.out.println("Hero created: " + event.getHero().name);
+        }
+        
+        @Asynchronous
+        public void handleHeroCreatedAsync(@ObservesAsync HeroCreatedEvent event) {
+            // Async processing
+            processHeroCreation(event.getHero());
+        }
+    }
+    ```
+  ruleID: spring-events-to-quarkus-00002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.context.event.EventListener
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Kafka configuration with Quarkus Reactive Messaging configuration
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Kafka Configuration
+    url: https://quarkus.io/guides/kafka#configuration-reference
+  message: |
+    Replace Spring Kafka configuration with Quarkus Reactive Messaging configuration.
+    
+    Before (Spring Boot):
+    ```java
+    @Configuration
+    @EnableKafka
+    public class KafkaConfig {
+        
+        @Bean
+        public ProducerFactory<String, Object> producerFactory() {
+            Map<String, Object> configProps = new HashMap<>();
+            configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+            configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+            configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+            configProps.put(ProducerConfig.ACKS_CONFIG, "all");
+            configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+            return new DefaultKafkaProducerFactory<>(configProps);
+        }
+        
+        @Bean
+        public KafkaTemplate<String, Object> kafkaTemplate() {
+            return new KafkaTemplate<>(producerFactory());
+        }
+        
+        @Bean
+        public ConsumerFactory<String, Object> consumerFactory() {
+            Map<String, Object> props = new HashMap<>();
+            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, "hero-service");
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+            return new DefaultKafkaConsumerFactory<>(props);
+        }
+    }
+    ```
+    
+    After (Quarkus - application.properties):
+    ```properties
+    # Kafka bootstrap servers
+    kafka.bootstrap.servers=localhost:9092
+    
+    # Producer configuration
+    mp.messaging.outgoing.hero-events.connector=smallrye-kafka
+    mp.messaging.outgoing.hero-events.topic=hero-events
+    mp.messaging.outgoing.hero-events.key.serializer=org.apache.kafka.common.serialization.StringSerializer
+    mp.messaging.outgoing.hero-events.value.serializer=io.quarkus.kafka.client.serialization.JsonbSerializer
+    mp.messaging.outgoing.hero-events.acks=all
+    mp.messaging.outgoing.hero-events.retries=3
+    
+    # Consumer configuration
+    mp.messaging.incoming.hero-events.connector=smallrye-kafka
+    mp.messaging.incoming.hero-events.topic=hero-events
+    mp.messaging.incoming.hero-events.group.id=hero-service
+    mp.messaging.incoming.hero-events.key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+    mp.messaging.incoming.hero-events.value.deserializer=io.quarkus.kafka.client.serialization.JsonbDeserializer
+    mp.messaging.incoming.hero-events.auto.offset.reset=earliest
+    
+    # Global Kafka configuration
+    mp.messaging.connector.smallrye-kafka.bootstrap.servers=localhost:9092
+    mp.messaging.connector.smallrye-kafka.security.protocol=PLAINTEXT
+    ```
+    
+    Remove @EnableKafka and configuration classes.
+  ruleID: spring-events-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.kafka.annotation.EnableKafka

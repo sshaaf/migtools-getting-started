@@ -1,0 +1,105 @@
+rulesPath: ../02-springboot-annotations-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/annotations
+  - name: builtin
+    dataPath: ./data/annotations
+tests:
+  - ruleID: springboot-annotations-to-quarkus-10001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10004
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 2
+  - ruleID: springboot-annotations-to-quarkus-10005
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10006
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10007
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10008
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 3
+  - ruleID: springboot-annotations-to-quarkus-10009
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10010
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 2
+  - ruleID: springboot-annotations-to-quarkus-10011
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 2
+  - ruleID: springboot-annotations-to-quarkus-10012
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10013
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+  - ruleID: springboot-annotations-to-quarkus-10014
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

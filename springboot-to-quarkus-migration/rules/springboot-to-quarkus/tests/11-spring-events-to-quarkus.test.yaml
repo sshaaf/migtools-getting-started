@@ -1,0 +1,28 @@
+rulesPath: ../11-spring-events-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ./data/events
+  - name: builtin
+    dataPath: ./data/events
+tests:
+  - ruleID: spring-events-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-events-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0
+  - ruleID: spring-events-to-quarkus-00003
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 0

@@ -1,0 +1,367 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring WebFlux reactive types with Quarkus Mutiny types
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-webflux
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Programming Guide
+    url: https://quarkus.io/guides/getting-started-reactive
+  - title: Quarkus Mutiny Guide
+    url: https://quarkus.io/guides/mutiny-primer
+  message: |
+    Replace Spring WebFlux reactive types (Mono/Flux) with Quarkus Mutiny types (Uni/Multi).
+    
+    Replace dependency:
+    ```xml
+    <!-- Remove -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    
+    <!-- Add -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-rest</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+    </dependency>
+    ```
+    
+    Before (Spring WebFlux):
+    ```java
+    @RestController
+    @RequestMapping("/heroes")
+    public class HeroController {
+        
+        @Autowired
+        private HeroService heroService;
+        
+        @GetMapping
+        public Flux<Hero> getAllHeroes() {
+            return heroService.findAllHeroes();
+        }
+        
+        @GetMapping("/{id}")
+        public Mono<Hero> getHero(@PathVariable Long id) {
+            return heroService.findHeroById(id)
+                .switchIfEmpty(Mono.error(new HeroNotFoundException(id)));
+        }
+        
+        @PostMapping
+        public Mono<Hero> createHero(@RequestBody Mono<Hero> heroMono) {
+            return heroMono
+                .flatMap(heroService::saveHero)
+                .doOnSuccess(hero -> log.info("Created hero: {}", hero.getName()));
+        }
+        
+        @DeleteMapping("/{id}")
+        public Mono<Void> deleteHero(@PathVariable Long id) {
+            return heroService.deleteHero(id);
+        }
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @Path("/heroes")
+    @ApplicationScoped
+    public class HeroResource {
+        
+        @Inject
+        HeroService heroService;
+        
+        @GET
+        public Multi<Hero> getAllHeroes() {
+            return heroService.findAllHeroes();
+        }
+        
+        @GET
+        @Path("/{id}")
+        public Uni<Hero> getHero(@PathParam("id") Long id) {
+            return heroService.findHeroById(id)
+                .onItem().ifNull().failWith(() -> new HeroNotFoundException(id));
+        }
+        
+        @POST
+        public Uni<Hero> createHero(Hero hero) {
+            return heroService.saveHero(hero)
+                .onItem().invoke(savedHero -> 
+                    Log.infof("Created hero: %s", savedHero.name));
+        }
+        
+        @DELETE
+        @Path("/{id}")
+        public Uni<Response> deleteHero(@PathParam("id") Long id) {
+            return heroService.deleteHero(id)
+                .onItem().transform(deleted -> Response.noContent().build());
+        }
+    }
+    ```
+  ruleID: spring-reactive-to-quarkus-00001
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-webflux
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data R2DBC with Quarkus Hibernate Reactive Panache
+  effort: 4
+  labels:
+  - konveyor.io/source=spring-data-r2dbc
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Hibernate Reactive Guide
+    url: https://quarkus.io/guides/hibernate-reactive-panache
+  message: |
+    Replace Spring Data R2DBC repositories with Quarkus Hibernate Reactive Panache.
+    
+    Replace dependency:
+    ```xml
+    <!-- Remove -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.r2dbc</groupId>
+        <artifactId>r2dbc-postgresql</artifactId>
+    </dependency>
+    
+    <!-- Add -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-reactive-pg-client</artifactId>
+    </dependency>
+    ```
+    
+    Before (Spring Data R2DBC):
+    ```java
+    @Repository
+    public interface HeroRepository extends ReactiveCrudRepository<Hero, Long> {
+        
+        Flux<Hero> findByNameContainingIgnoreCase(String name);
+        
+        @Query("SELECT * FROM heroes WHERE level >= :level")
+        Flux<Hero> findHeroesWithLevelGreaterThan(@Param("level") int level);
+        
+        @Modifying
+        @Query("DELETE FROM heroes WHERE level < :level")
+        Mono<Integer> deleteWeakHeroes(@Param("level") int level);
+    }
+    
+    @Service
+    @Transactional
+    public class HeroService {
+        
+        @Autowired
+        private HeroRepository heroRepository;
+        
+        public Flux<Hero> findAllHeroes() {
+            return heroRepository.findAll();
+        }
+        
+        public Mono<Hero> findHeroById(Long id) {
+            return heroRepository.findById(id);
+        }
+        
+        public Mono<Hero> saveHero(Hero hero) {
+            return heroRepository.save(hero);
+        }
+        
+        public Mono<Void> deleteHero(Long id) {
+            return heroRepository.deleteById(id);
+        }
+    }
+    ```
+    
+    After (Quarkus Hibernate Reactive Panache):
+    ```java
+    @Entity
+    public class Hero extends PanacheEntity {
+        public String name;
+        public int level;
+        public String power;
+        
+        // Static methods for queries
+        public static Multi<Hero> findByNameContainingIgnoreCase(String name) {
+            return find("upper(name) like upper(?1)", "%" + name + "%").stream();
+        }
+        
+        public static Multi<Hero> findHeroesWithLevelGreaterThan(int level) {
+            return find("level >= ?1", level).stream();
+        }
+        
+        public static Uni<Integer> deleteWeakHeroes(int level) {
+            return delete("level < ?1", level);
+        }
+    }
+    
+    @ApplicationScoped
+    public class HeroService {
+        
+        public Multi<Hero> findAllHeroes() {
+            return Hero.streamAll();
+        }
+        
+        public Uni<Hero> findHeroById(Long id) {
+            return Hero.findById(id);
+        }
+        
+        @WithTransaction
+        public Uni<Hero> saveHero(Hero hero) {
+            return hero.persist().replaceWith(hero);
+        }
+        
+        @WithTransaction
+        public Uni<Boolean> deleteHero(Long id) {
+            return Hero.deleteById(id);
+        }
+        
+        public Multi<Hero> findHeroesByName(String name) {
+            return Hero.findByNameContainingIgnoreCase(name);
+        }
+    }
+    ```
+    
+    Configuration:
+    ```properties
+    # Reactive datasource configuration
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.reactive.url=postgresql://localhost:5432/heroesdb
+    quarkus.datasource.username=hero
+    quarkus.datasource.password=hero
+    
+    # Hibernate Reactive configuration
+    quarkus.hibernate-orm.database.generation=update
+    quarkus.hibernate-orm.log.sql=true
+    ```
+  ruleID: spring-reactive-to-quarkus-00002
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-data-r2dbc
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Reactor operators with Mutiny operators
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-webflux
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Mutiny Guide
+    url: https://quarkus.io/guides/mutiny-primer
+  message: |
+    Replace Spring Reactor operators with equivalent Mutiny operators.
+    
+    Before (Spring Reactor):
+    ```java
+    @Service
+    public class HeroProcessingService {
+        
+        public Flux<Hero> processHeroes() {
+            return heroRepository.findAll()
+                .filter(hero -> hero.getLevel() > 5)
+                .map(this::enhanceHero)
+                .flatMap(this::validateHero)
+                .onErrorResume(throwable -> {
+                    log.error("Error processing heroes", throwable);
+                    return Flux.empty();
+                })
+                .doOnNext(hero -> log.info("Processed hero: {}", hero.getName()))
+                .subscribeOn(Schedulers.boundedElastic());
+        }
+        
+        public Mono<Hero> processHero(Long id) {
+            return heroRepository.findById(id)
+                .switchIfEmpty(Mono.error(new HeroNotFoundException(id)))
+                .map(this::enhanceHero)
+                .flatMap(this::validateHero)
+                .timeout(Duration.ofSeconds(10))
+                .retry(3)
+                .cache(Duration.ofMinutes(5));
+        }
+        
+        private Mono<Hero> validateHero(Hero hero) {
+            if (hero.getName() == null || hero.getName().isEmpty()) {
+                return Mono.error(new ValidationException("Hero name is required"));
+            }
+            return Mono.just(hero);
+        }
+        
+        private Hero enhanceHero(Hero hero) {
+            hero.setProcessedAt(LocalDateTime.now());
+            return hero;
+        }
+    }
+    ```
+    
+    After (Quarkus Mutiny):
+    ```java
+    @ApplicationScoped
+    public class HeroProcessingService {
+        
+        public Multi<Hero> processHeroes() {
+            return Hero.streamAll()
+                .filter(hero -> hero.level > 5)
+                .map(this::enhanceHero)
+                .onItem().transformToUniAndMerge(this::validateHero)
+                .onFailure().recoverWithMulti(throwable -> {
+                    Log.error("Error processing heroes", throwable);
+                    return Multi.createFrom().empty();
+                })
+                .onItem().invoke(hero -> Log.infof("Processed hero: %s", hero.name))
+                .runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+        }
+        
+        public Uni<Hero> processHero(Long id) {
+            return Hero.<Hero>findById(id)
+                .onItem().ifNull().failWith(() -> new HeroNotFoundException(id))
+                .map(this::enhanceHero)
+                .onItem().transformToUni(this::validateHero)
+                .ifNoItem().after(Duration.ofSeconds(10)).fail()
+                .onFailure().retry().atMost(3)
+                .memoize().for_(Duration.ofMinutes(5));
+        }
+        
+        private Uni<Hero> validateHero(Hero hero) {
+            if (hero.name == null || hero.name.isEmpty()) {
+                return Uni.createFrom().failure(new ValidationException("Hero name is required"));
+            }
+            return Uni.createFrom().item(hero);
+        }
+        
+        private Hero enhanceHero(Hero hero) {
+            hero.processedAt = LocalDateTime.now();
+            return hero;
+        }
+    }
+    ```
+    
+    Common operator mappings:
+    - `Mono.just()` → `Uni.createFrom().item()`
+    - `Flux.fromIterable()` → `Multi.createFrom().iterable()`
+    - `switchIfEmpty()` → `onItem().ifNull().switchTo()`
+    - `onErrorResume()` → `onFailure().recoverWith()`
+    - `doOnNext()` → `onItem().invoke()`
+    - `flatMap()` → `onItem().transformToUni()`
+    - `timeout()` → `ifNoItem().after().fail()`
+    - `retry()` → `onFailure().retry().atMost()`
+    - `cache()` → `memoize().for_()`
+  ruleID: spring-reactive-to-quarkus-00003
+  when:
+    or:
+    - java.referenced:
+        pattern: reactor.core.publisher.Mono
+    - java.referenced:
+        pattern: reactor.core.publisher.Flux

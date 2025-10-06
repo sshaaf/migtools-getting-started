@@ -1,0 +1,151 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Boot Docker configuration with Quarkus container build
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Container Images Guide
+    url: https://quarkus.io/guides/container-image
+  message: |
+    Replace Spring Boot Docker configuration with Quarkus container build capabilities.
+    
+    Before (Spring Boot Dockerfile):
+    ```dockerfile
+    FROM openjdk:11-jre-slim
+    
+    ARG JAR_FILE=target/*.jar
+    COPY ${JAR_FILE} app.jar
+    
+    EXPOSE 8080
+    
+    ENTRYPOINT ["java","-jar","/app.jar"]
+    ```
+    
+    After (Quarkus):
+    Add container image extension:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-container-image-jib</artifactId>
+    </dependency>
+    ```
+    
+    Configuration (application.properties):
+    ```properties
+    # Container image configuration
+    quarkus.container-image.build=true
+    quarkus.container-image.group=heroes
+    quarkus.container-image.name=hero-service
+    quarkus.container-image.tag=latest
+    
+    # JVM image configuration
+    quarkus.container-image.builder=jib
+    quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi8/openjdk-11:latest
+    
+    # Native image configuration (optional)
+    quarkus.container-image.builder=docker
+    quarkus.native.container-build=true
+    quarkus.container-image.build=true
+    quarkus.container-image.push=false
+    
+    # Kubernetes deployment
+    quarkus.kubernetes.deployment-target=kubernetes
+    quarkus.kubernetes.replicas=3
+    quarkus.kubernetes.service-type=LoadBalancer
+    ```
+    
+    Build commands:
+    ```bash
+    # JVM mode container
+    ./mvnw clean package -Dquarkus.container-image.build=true
+    
+    # Native mode container
+    ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
+    
+    # With Kubernetes manifests
+    ./mvnw clean package -Dquarkus.kubernetes.deploy=true
+    ```
+    
+    Generated Kubernetes manifests will be available in `target/kubernetes/`.
+  ruleID: spring-cloud-native-to-quarkus-00001
+  when:
+    builtin.file:
+      pattern: Dockerfile
+
+- category: optional
+  customVariables: []
+  description: Replace Spring Boot native image configuration with Quarkus native build
+  effort: 4
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Native Guide
+    url: https://quarkus.io/guides/building-native-image
+  message: |
+    Replace Spring Boot native image configuration with Quarkus native build.
+    
+    Before (Spring Boot with GraalVM):
+    ```xml
+    <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+            <image>
+                <builder>paketobuildpacks/builder:tiny</builder>
+                <env>
+                    <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                </env>
+            </image>
+        </configuration>
+    </plugin>
+    
+    <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+    </plugin>
+    ```
+    
+    After (Quarkus):
+    Native build is built-in, no additional plugins needed.
+    
+    Configuration (application.properties):
+    ```properties
+    # Native build configuration
+    quarkus.native.enabled=true
+    quarkus.native.container-build=true
+    quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:22.3-java17
+    
+    # Native image optimization
+    quarkus.native.additional-build-args=-H:+ReportExceptionStackTraces,--initialize-at-build-time=org.slf4j.LoggerFactory
+    
+    # Resources to include
+    quarkus.native.resources.includes=META-INF/resources/**,application.properties
+    
+    # Enable debug info (for development)
+    %dev.quarkus.native.debug.enabled=true
+    ```
+    
+    Build commands:
+    ```bash
+    # Native executable
+    ./mvnw clean package -Pnative
+    
+    # Native container
+    ./mvnw clean package -Pnative -Dquarkus.native.container-build=true
+    
+    # Native with container image
+    ./mvnw clean package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
+    ```
+    
+    Benefits:
+    - Faster startup (milliseconds vs seconds)
+    - Lower memory usage (10-100MB vs 100MB+)
+    - Better suited for serverless and containers
+  ruleID: spring-cloud-native-to-quarkus-00002
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.graalvm.buildtools.native-maven-plugin

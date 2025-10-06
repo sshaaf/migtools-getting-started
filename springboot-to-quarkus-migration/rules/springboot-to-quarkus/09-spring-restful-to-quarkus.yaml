@@ -1,0 +1,206 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @ResponseStatus with JAX-RS Response
+  effort: 2
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest
+  message: |
+    Replace Spring @ResponseStatus with JAX-RS Response for custom HTTP status codes.
+    
+    Before (Spring Boot):
+    ```java
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Hero createHero(@RequestBody Hero hero) {
+        return heroService.persistHero(hero);
+    }
+    
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteHero(@PathVariable Long id) {
+        heroService.deleteHero(id);
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @POST
+    public Response createHero(Hero hero) {
+        Hero created = heroService.persistHero(hero);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+    
+    @DELETE
+    @Path("/{id}")
+    public Response deleteHero(@PathParam("id") Long id) {
+        heroService.deleteHero(id);
+        return Response.noContent().build();
+    }
+    ```
+  ruleID: spring-restful-to-quarkus-00001
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.ResponseStatus
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring content negotiation with JAX-RS @Produces/@Consumes
+  effort: 1
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring content negotiation with JAX-RS @Produces and @Consumes annotations.
+    
+    Before (Spring Boot):
+    ```java
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Hero> getAllHeroes() {
+        return heroService.findAllHeroes();
+    }
+    
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, 
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    public Hero createHero(@RequestBody Hero hero) {
+        return heroService.persistHero(hero);
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Hero> getAllHeroes() {
+        return heroService.findAllHeroes();
+    }
+    
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Hero createHero(Hero hero) {
+        return heroService.persistHero(hero);
+    }
+    ```
+  ruleID: spring-restful-to-quarkus-00002
+  when:
+    builtin.filecontent:
+      filePattern: .*\.java
+      pattern: MediaType\.APPLICATION_JSON_VALUE
+
+- category: optional
+  customVariables: []
+  description: Replace Spring HATEOAS with JAX-RS Link headers
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: JAX-RS Link Headers
+    url: https://docs.oracle.com/javaee/7/api/javax/ws/rs/core/Link.html
+  message: |
+    Replace Spring HATEOAS with JAX-RS Link headers for hypermedia APIs.
+    
+    Before (Spring Boot):
+    ```java
+    @GetMapping("/{id}")
+    public EntityModel<Hero> getHero(@PathVariable Long id) {
+        Hero hero = heroService.findHeroById(id);
+        return EntityModel.of(hero)
+            .add(linkTo(methodOn(HeroController.class).getHero(id)).withSelfRel())
+            .add(linkTo(HeroController.class).withRel("heroes"));
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @GET
+    @Path("/{id}")
+    public Response getHero(@PathParam("id") Long id, @Context UriInfo uriInfo) {
+        Hero hero = heroService.findHeroById(id);
+        
+        URI selfUri = uriInfo.getAbsolutePathBuilder().build();
+        URI heroesUri = uriInfo.getBaseUriBuilder().path("heroes").build();
+        
+        return Response.ok(hero)
+            .links(Link.fromUri(selfUri).rel("self").build())
+            .links(Link.fromUri(heroesUri).rel("heroes").build())
+            .build();
+    }
+    ```
+  ruleID: spring-restful-to-quarkus-00003
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-hateoas
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring async processing with Quarkus reactive types
+  effort: 3
+  labels:
+  - konveyor.io/source=spring-boot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Reactive Programming Guide
+    url: https://quarkus.io/guides/getting-started-reactive
+  message: |
+    Replace Spring async processing with Quarkus reactive types (Uni/Multi).
+    
+    Before (Spring Boot):
+    ```java
+    @GetMapping("/async")
+    public CompletableFuture<List<Hero>> getHeroesAsync() {
+        return CompletableFuture.supplyAsync(() -> {
+            return heroService.findAllHeroes();
+        });
+    }
+    
+    @GetMapping("/deferred")
+    public DeferredResult<Hero> getHeroDeferred(@RequestParam Long id) {
+        DeferredResult<Hero> result = new DeferredResult<>(5000L);
+        
+        CompletableFuture.supplyAsync(() -> heroService.findHeroById(id))
+            .whenComplete((hero, ex) -> {
+                if (ex != null) {
+                    result.setErrorResult(ex);
+                } else {
+                    result.setResult(hero);
+                }
+            });
+        
+        return result;
+    }
+    ```
+    
+    After (Quarkus):
+    ```java
+    @GET
+    @Path("/async")
+    public Uni<List<Hero>> getHeroesAsync() {
+        return Uni.createFrom().item(() -> heroService.findAllHeroes())
+            .runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+    }
+    
+    @GET
+    @Path("/reactive")
+    public Uni<Hero> getHeroReactive(@QueryParam("id") Long id) {
+        return heroService.findHeroByIdAsync(id)
+            .ifNoItem().after(Duration.ofSeconds(5))
+            .fail();
+    }
+    ```
+  ruleID: spring-restful-to-quarkus-00004
+  when:
+    or:
+    - java.referenced:
+        pattern: org.springframework.web.context.request.async.DeferredResult
+    - java.referenced:
+        pattern: java.util.concurrent.CompletableFuture

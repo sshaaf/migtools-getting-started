@@ -1,0 +1,380 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data JpaRepository with Quarkus Panache Repository
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide
+    url: https://quarkus.io/guides/hibernate-orm-panache
+  message: |
+    Replace Spring Data JpaRepository with Quarkus Panache Repository.
+    
+    Before:
+    ```java
+    @Repository
+    public interface UserRepository extends JpaRepository<User, Long> {
+        List<User> findByName(String name);
+        Optional<User> findByEmail(String email);
+    }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class UserRepository implements PanacheRepository<User> {
+        public List<User> findByName(String name) {
+            return find("name", name).list();
+        }
+        
+        public Optional<User> findByEmail(String email) {
+            return find("email", email).firstResultOptional();
+        }
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00001
+  when:
+    java.referenced:
+      pattern: org.springframework.data.jpa.repository.JpaRepository
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data CrudRepository with Quarkus Panache Repository
+  effort: 3
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide
+    url: https://quarkus.io/guides/hibernate-orm-panache
+  message: |
+    Replace Spring Data CrudRepository with Quarkus Panache Repository.
+    
+    Before:
+    ```java
+    @Repository
+    public interface UserRepository extends CrudRepository<User, Long> {
+        // CRUD methods are inherited
+    }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class UserRepository implements PanacheRepository<User> {
+        // CRUD methods are inherited from PanacheRepository
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00002
+  when:
+    java.referenced:
+      pattern: org.springframework.data.repository.CrudRepository
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data @Query with Panache query methods
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Queries
+    url: https://quarkus.io/guides/hibernate-orm-panache#custom-queries
+  message: |
+    Replace Spring Data @Query with Panache query methods.
+    
+    Before:
+    ```java
+    @Query("SELECT u FROM User u WHERE u.age > :age")
+    List<User> findUsersOlderThan(@Param("age") int age);
+    
+    @Query(value = "SELECT * FROM users WHERE active = true", nativeQuery = true)
+    List<User> findActiveUsers();
+    ```
+    
+    After:
+    ```java
+    public List<User> findUsersOlderThan(int age) {
+        return find("age > ?1", age).list();
+    }
+    
+    public List<User> findActiveUsers() {
+        return find("active = true").list();
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.data.jpa.repository.Query
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @Transactional with Quarkus @Transactional
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Transaction Guide
+    url: https://quarkus.io/guides/transaction
+  message: |
+    Replace Spring's @Transactional with Quarkus @Transactional.
+    
+    Before:
+    ```java
+    @Transactional
+    public void updateUser(User user) {
+        userRepository.save(user);
+    }
+    ```
+    
+    After:
+    ```java
+    @Transactional
+    public void updateUser(User user) {
+        userRepository.persist(user);
+    }
+    ```
+    
+    Note: Import from `jakarta.transaction.Transactional` instead of Spring's version (Quarkus 3.x uses Jakarta EE).
+  ruleID: springboot-data-to-quarkus-00004
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.transaction.annotation.Transactional
+
+- category: mandatory
+  customVariables: []
+  description: Convert JPA Entity to Panache Entity (Active Record pattern)
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Active Record
+    url: https://quarkus.io/guides/hibernate-orm-panache#solution-1-using-the-active-record-pattern
+  message: |
+    Consider converting JPA Entity to Panache Entity for the Active Record pattern.
+    
+    Before:
+    ```java
+    @Entity
+    public class User {
+        @Id
+        @GeneratedValue
+        private Long id;
+        private String name;
+        // getters and setters
+    }
+    ```
+    
+    After (Active Record pattern):
+    ```java
+    @Entity
+    public class User extends PanacheEntity {
+        public String name;
+        
+        public static List<User> findByName(String name) {
+            return find("name", name).list();
+        }
+    }
+    ```
+    
+    Or keep the Repository pattern if preferred.
+  ruleID: springboot-data-to-quarkus-00005
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: jakarta.persistence.Entity
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data Pageable with Quarkus PanacheQuery
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Paging
+    url: https://quarkus.io/guides/hibernate-orm-panache#paging
+  message: |
+    Replace Spring Data Pageable with Quarkus PanacheQuery paging.
+    
+    Before:
+    ```java
+    public Page<User> findUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+    ```
+    
+    After:
+    ```java
+    public List<User> findUsers(int page, int size) {
+        return User.findAll()
+                   .page(page, size)
+                   .list();
+    }
+    
+    public long countUsers() {
+        return User.count();
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00006
+  when:
+    java.referenced:
+      pattern: org.springframework.data.domain.Pageable
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring Data Sort with Panache Sort
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Sorting
+    url: https://quarkus.io/guides/hibernate-orm-panache#sorting
+  message: |
+    Replace Spring Data Sort with Panache Sort.
+    
+    Before:
+    ```java
+    public List<User> findUsersSorted(Sort sort) {
+        return userRepository.findAll(sort);
+    }
+    ```
+    
+    After:
+    ```java
+    public List<User> findUsersSorted(String sortBy) {
+        return User.findAll(Sort.by(sortBy)).list();
+    }
+    
+    // Or for descending order
+    public List<User> findUsersSortedDesc(String sortBy) {
+        return User.findAll(Sort.descending(sortBy)).list();
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00007
+  when:
+    java.referenced:
+      pattern: org.springframework.data.domain.Sort
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @Modifying queries with Panache update/delete methods
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Updates
+    url: https://quarkus.io/guides/hibernate-orm-panache#updating-entities
+  message: |
+    Replace Spring @Modifying queries with Panache update/delete methods.
+    
+    Before:
+    ```java
+    @Modifying
+    @Query("UPDATE User u SET u.active = false WHERE u.lastLogin < :date")
+    int deactivateInactiveUsers(@Param("date") LocalDate date);
+    
+    @Modifying
+    @Query("DELETE FROM User u WHERE u.active = false")
+    int deleteInactiveUsers();
+    ```
+    
+    After:
+    ```java
+    public int deactivateInactiveUsers(LocalDate date) {
+        return User.update("active = false where lastLogin < ?1", date);
+    }
+    
+    public int deleteInactiveUsers() {
+        return User.delete("active = false");
+    }
+    ```
+  ruleID: springboot-data-to-quarkus-00008
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.data.jpa.repository.Modifying
+
+- category: mandatory
+  customVariables: []
+  description: Replace Spring @EnableJpaRepositories with Quarkus configuration
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Hibernate ORM Guide
+    url: https://quarkus.io/guides/hibernate-orm
+  message: |
+    Remove Spring's @EnableJpaRepositories annotation.
+    
+    Quarkus automatically discovers and configures JPA entities and repositories.
+    No explicit configuration annotation is needed.
+    
+    Before:
+    ```java
+    @Configuration
+    @EnableJpaRepositories(basePackages = "com.example.repository")
+    public class DatabaseConfig {
+    }
+    ```
+    
+    After: Remove this configuration class entirely.
+  ruleID: springboot-data-to-quarkus-00009
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.data.jpa.repository.config.EnableJpaRepositories
+
+- category: optional
+  customVariables: []
+  description: Consider using Panache simplified entity approach
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Panache Guide - Simplified Entities
+    url: https://quarkus.io/guides/hibernate-orm-panache#defining-your-entity
+  message: |
+    Consider using Panache simplified entity approach with public fields.
+    
+    Traditional JPA approach:
+    ```java
+    @Entity
+    public class User {
+        @Id
+        @GeneratedValue
+        private Long id;
+        private String name;
+        
+        // getters and setters
+    }
+    ```
+    
+    Panache simplified approach:
+    ```java
+    @Entity
+    public class User extends PanacheEntity {
+        public String name;
+        // No getters/setters needed for public fields
+    }
+    ```
+    
+    This is optional but reduces boilerplate code significantly.
+  ruleID: springboot-data-to-quarkus-00010
+  when:
+    and:
+    - java.referenced:
+        location: ANNOTATION
+        pattern: jakarta.persistence.Entity
+    - java.referenced:
+        location: FIELD
+        pattern: jakarta.persistence.Id

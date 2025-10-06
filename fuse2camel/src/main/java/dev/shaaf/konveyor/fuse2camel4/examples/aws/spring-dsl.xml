@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:c="http://camel.apache.org/schema/spring"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <c:camelContext id="camel">
+        <c:route id="start-step-function">
+            <c:from uri="direct:start"/>
+            <c:setHeader headerName="CamelAwsStateMachineExecutionArn">
+                <c:constant>arn:aws:states:us-west-2:123456789012:stateMachine:OrderProcessing</c:constant>
+            </c:setHeader>
+            <c:setHeader headerName="CamelAwsStateMachineExecutionName">
+                <c:constant>Execution-001</c:constant>
+            </c:setHeader>
+            <c:to uri="aws2-step-functions://default?operation=startExecution"/>
+        </c:route>
+    </c:camelContext>
+</beans>

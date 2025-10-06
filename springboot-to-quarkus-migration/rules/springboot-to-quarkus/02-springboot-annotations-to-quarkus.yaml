@@ -1,0 +1,431 @@
+- category: mandatory
+  customVariables: []
+  description: Remove @SpringBootApplication annotation
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus Getting Started Guide
+    url: https://quarkus.io/guides/getting-started
+  message: |
+    Remove the @SpringBootApplication annotation and the main method.
+    
+    Quarkus applications do not require a main class with @SpringBootApplication.
+    The application entry point is handled by Quarkus runtime.
+    
+    Before:
+    ```java
+    @SpringBootApplication
+    public class MyApplication {
+        public static void main(String[] args) {
+            SpringApplication.run(MyApplication.class, args);
+        }
+    }
+    ```
+    
+    After: Remove this class entirely or convert it to a regular component.
+  ruleID: springboot-annotations-to-quarkus-10001
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.boot.autoconfigure.SpringBootApplication
+
+- category: mandatory
+  customVariables: []
+  description: Replace @RestController with @Path
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @RestController with JAX-RS @Path annotation.
+    
+    Before:
+    ```java
+    @RestController
+    @RequestMapping("/api")
+    public class MyController {
+    }
+    ```
+    
+    After:
+    ```java
+    @Path("/api")
+    public class MyController {
+    }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10002
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.RestController
+
+- category: mandatory
+  customVariables: []
+  description: Replace @RequestMapping with JAX-RS annotations
+  effort: 2
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @RequestMapping with appropriate JAX-RS annotations.
+    
+    Before:
+    ```java
+    @RequestMapping(value = "/users", method = RequestMethod.GET)
+    public List<User> getUsers() { ... }
+    
+    @RequestMapping(value = "/users", method = RequestMethod.POST)
+    public User createUser(@RequestBody User user) { ... }
+    ```
+    
+    After:
+    ```java
+    @GET
+    @Path("/users")
+    public List<User> getUsers() { ... }
+    
+    @POST
+    @Path("/users")
+    public User createUser(User user) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10003
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.RequestMapping
+
+- category: mandatory
+  customVariables: []
+  description: Replace @GetMapping with @GET
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @GetMapping with JAX-RS @GET annotation.
+    
+    Before:
+    ```java
+    @GetMapping("/users/{id}")
+    public User getUser(@PathVariable Long id) { ... }
+    ```
+    
+    After:
+    ```java
+    @GET
+    @Path("/users/{id}")
+    public User getUser(@PathParam("id") Long id) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10004
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.GetMapping
+
+- category: mandatory
+  customVariables: []
+  description: Replace @PostMapping with @POST
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @PostMapping with JAX-RS @POST annotation.
+    
+    Before:
+    ```java
+    @PostMapping("/users")
+    public User createUser(@RequestBody User user) { ... }
+    ```
+    
+    After:
+    ```java
+    @POST
+    @Path("/users")
+    public User createUser(User user) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10005
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.PostMapping
+
+- category: mandatory
+  customVariables: []
+  description: Replace @PutMapping with @PUT
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @PutMapping with JAX-RS @PUT annotation.
+    
+    Before:
+    ```java
+    @PutMapping("/users/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) { ... }
+    ```
+    
+    After:
+    ```java
+    @PUT
+    @Path("/users/{id}")
+    public User updateUser(@PathParam("id") Long id, User user) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10006
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.PutMapping
+
+- category: mandatory
+  customVariables: []
+  description: Replace @DeleteMapping with @DELETE
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @DeleteMapping with JAX-RS @DELETE annotation.
+    
+    Before:
+    ```java
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable Long id) { ... }
+    ```
+    
+    After:
+    ```java
+    @DELETE
+    @Path("/users/{id}")
+    public void deleteUser(@PathParam("id") Long id) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10007
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.DeleteMapping
+
+- category: mandatory
+  customVariables: []
+  description: Replace @PathVariable with @PathParam
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @PathVariable with JAX-RS @PathParam annotation.
+    
+    Before:
+    ```java
+    public User getUser(@PathVariable Long id) { ... }
+    ```
+    
+    After:
+    ```java
+    public User getUser(@PathParam("id") Long id) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10008
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.PathVariable
+
+- category: mandatory
+  customVariables: []
+  description: Replace @RequestParam with @QueryParam
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Replace Spring's @RequestParam with JAX-RS @QueryParam annotation.
+    
+    Before:
+    ```java
+    public List<User> getUsers(@RequestParam String name) { ... }
+    ```
+    
+    After:
+    ```java
+    public List<User> getUsers(@QueryParam("name") String name) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10009
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.RequestParam
+
+- category: mandatory
+  customVariables: []
+  description: Remove @RequestBody annotation
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus REST Guide
+    url: https://quarkus.io/guides/rest-json
+  message: |
+    Remove Spring's @RequestBody annotation. In Quarkus with REST, request bodies are automatically deserialized.
+    
+    Before:
+    ```java
+    public User createUser(@RequestBody User user) { ... }
+    ```
+    
+    After:
+    ```java
+    public User createUser(User user) { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10010
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.web.bind.annotation.RequestBody
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Autowired with @Inject
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CDI Guide
+    url: https://quarkus.io/guides/cdi
+  message: |
+    Replace Spring's @Autowired with CDI @Inject annotation.
+    
+    Before:
+    ```java
+    @Autowired
+    private UserService userService;
+    ```
+    
+    After:
+    ```java
+    @Inject
+    UserService userService;
+    ```
+  ruleID: springboot-annotations-to-quarkus-10011
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.beans.factory.annotation.Autowired
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Service with @ApplicationScoped
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CDI Guide
+    url: https://quarkus.io/guides/cdi
+  message: |
+    Replace Spring's @Service with CDI @ApplicationScoped annotation.
+    
+    Before:
+    ```java
+    @Service
+    public class UserService { ... }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class UserService { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10012
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.stereotype.Service
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Repository with @ApplicationScoped
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CDI Guide
+    url: https://quarkus.io/guides/cdi
+  message: |
+    Replace Spring's @Repository with CDI @ApplicationScoped annotation.
+    
+    Before:
+    ```java
+    @Repository
+    public class UserRepository { ... }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class UserRepository { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10013
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.stereotype.Repository
+
+- category: mandatory
+  customVariables: []
+  description: Replace @Component with @ApplicationScoped
+  effort: 1
+  labels:
+  - konveyor.io/source=springboot
+  - konveyor.io/target=quarkus
+  links:
+  - title: Quarkus CDI Guide
+    url: https://quarkus.io/guides/cdi
+  message: |
+    Replace Spring's @Component with CDI @ApplicationScoped annotation.
+    
+    Before:
+    ```java
+    @Component
+    public class MyComponent { ... }
+    ```
+    
+    After:
+    ```java
+    @ApplicationScoped
+    public class MyComponent { ... }
+    ```
+  ruleID: springboot-annotations-to-quarkus-10014
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: org.springframework.stereotype.Component
