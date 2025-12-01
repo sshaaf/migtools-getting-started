@@ -1,0 +1,66 @@
+- ruleID: javax-to-jakarta-imports-00001
+  unaffected:
+    - JakartaRestController.java
+  violated:
+    - JavaxRestController.java
+
+- ruleID: javax-to-jakarta-imports-00002
+  unaffected:
+    - JakartaInjectService.java
+  violated:
+    - JavaxInjectService.java
+
+- ruleID: javax-to-jakarta-imports-00003
+  unaffected:
+    - JakartaCdiService.java
+  violated:
+    - JavaxCdiService.java
+
+- ruleID: javax-to-jakarta-imports-00004
+  unaffected:
+    - JakartaEntity.java
+  violated:
+    - JavaxEntity.java
+
+- ruleID: javax-to-jakarta-imports-00005
+  unaffected:
+    - JakartaTransactionalService.java
+  violated:
+    - JavaxTransactionalService.java
+
+- ruleID: javax-to-jakarta-imports-00006
+  unaffected:
+    - JakartaValidationController.java
+  violated:
+    - JavaxValidationController.java
+
+- ruleID: javax-to-jakarta-imports-00007
+  unaffected:
+    - JakartaServletFilter.java
+  violated:
+    - JavaxServletFilter.java
+
+- ruleID: javax-to-jakarta-imports-00008
+  unaffected:
+    - JakartaJsonProcessor.java
+  violated:
+    - JavaxJsonProcessor.java
+
+- ruleID: javax-to-jakarta-imports-00009
+  unaffected:
+    - JakartaSecurityContext.java
+  violated:
+    - JavaxSecurityContext.java
+
+- ruleID: javax-to-jakarta-imports-00010
+  unaffected:
+    - JakartaAnnotationService.java
+  violated:
+    - JavaxAnnotationService.java
+
+
+
+
+
+
+

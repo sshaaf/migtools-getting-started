@@ -1,0 +1,23 @@
+# Test cases for Spring Boot Web migration rules
+# These tests verify that Spring MVC patterns are properly detected
+
+rulesPath: ../04-springboot-web-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ../../../../src/main/java
+
+tests:
+  # Test 1: ResponseEntity usage
+  - ruleID: springboot-web-to-quarkus-00001
+    testCases:
+      - name: detect-responseentity-usage
+        hasIncidents:
+          atLeast: 1
+
+  # Test 2: HttpStatus usage
+  - ruleID: springboot-web-to-quarkus-00005
+    testCases:
+      - name: detect-httpstatus-usage
+        hasIncidents:
+          atLeast: 1
+

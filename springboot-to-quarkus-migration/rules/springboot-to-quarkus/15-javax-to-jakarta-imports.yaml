@@ -1,0 +1,401 @@
+- category: mandatory
+  customVariables: []
+  description: Replace javax.ws.rs imports with jakarta.ws.rs imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta EE Migration Guide
+      url: https://jakarta.ee/specifications/platform/9/platform-spec-9.html
+    - title: Quarkus Jakarta EE Guide
+      url: https://quarkus.io/guides/getting-started#jakarta-ee
+  message: |
+    Replace javax.ws.rs imports with jakarta.ws.rs imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.ws.rs.GET;
+    import javax.ws.rs.POST;
+    import javax.ws.rs.PUT;
+    import javax.ws.rs.DELETE;
+    import javax.ws.rs.Path;
+    import javax.ws.rs.PathParam;
+    import javax.ws.rs.QueryParam;
+    import javax.ws.rs.HeaderParam;
+    import javax.ws.rs.CookieParam;
+    import javax.ws.rs.Produces;
+    import javax.ws.rs.Consumes;
+    import javax.ws.rs.core.MediaType;
+    import javax.ws.rs.core.Response;
+    ```
+    
+    After:
+    ```java
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.POST;
+    import jakarta.ws.rs.PUT;
+    import jakarta.ws.rs.DELETE;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.PathParam;
+    import jakarta.ws.rs.QueryParam;
+    import jakarta.ws.rs.HeaderParam;
+    import jakarta.ws.rs.CookieParam;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.Consumes;
+    import jakarta.ws.rs.core.MediaType;
+    import jakarta.ws.rs.core.Response;
+    ```
+  ruleID: javax-to-jakarta-imports-00001
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.ws.rs.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.inject imports with jakarta.inject imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Dependency Injection Guide
+      url: https://jakarta.ee/specifications/dependency-injection/
+  message: |
+    Replace javax.inject imports with jakarta.inject imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.inject.Inject;
+    import javax.inject.Singleton;
+    import javax.inject.Named;
+    ```
+    
+    After:
+    ```java
+    import jakarta.inject.Inject;
+    import jakarta.inject.Singleton;
+    import jakarta.inject.Named;
+    ```
+  ruleID: javax-to-jakarta-imports-00002
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.inject.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.enterprise imports with jakarta.enterprise imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta CDI Guide
+      url: https://jakarta.ee/specifications/cdi/
+  message: |
+    Replace javax.enterprise imports with jakarta.enterprise imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.enterprise.context.ApplicationScoped;
+    import javax.enterprise.context.RequestScoped;
+    import javax.enterprise.context.SessionScoped;
+    import javax.enterprise.context.Dependent;
+    import javax.enterprise.event.Event;
+    import javax.enterprise.event.Observes;
+    import javax.enterprise.inject.Produces;
+    import javax.enterprise.inject.Default;
+    ```
+    
+    After:
+    ```java
+    import jakarta.enterprise.context.ApplicationScoped;
+    import jakarta.enterprise.context.RequestScoped;
+    import jakarta.enterprise.context.SessionScoped;
+    import jakarta.enterprise.context.Dependent;
+    import jakarta.enterprise.event.Event;
+    import jakarta.enterprise.event.Observes;
+    import jakarta.enterprise.inject.Produces;
+    import jakarta.enterprise.inject.Default;
+    ```
+  ruleID: javax-to-jakarta-imports-00003
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.enterprise.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.persistence imports with jakarta.persistence imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Persistence Guide
+      url: https://jakarta.ee/specifications/persistence/
+  message: |
+    Replace javax.persistence imports with jakarta.persistence imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.persistence.Entity;
+    import javax.persistence.Id;
+    import javax.persistence.GeneratedValue;
+    import javax.persistence.GenerationType;
+    import javax.persistence.Column;
+    import javax.persistence.Table;
+    import javax.persistence.ManyToOne;
+    import javax.persistence.OneToMany;
+    import javax.persistence.JoinColumn;
+    import javax.persistence.EntityManager;
+    import javax.persistence.PersistenceContext;
+    ```
+    
+    After:
+    ```java
+    import jakarta.persistence.Entity;
+    import jakarta.persistence.Id;
+    import jakarta.persistence.GeneratedValue;
+    import jakarta.persistence.GenerationType;
+    import jakarta.persistence.Column;
+    import jakarta.persistence.Table;
+    import jakarta.persistence.ManyToOne;
+    import jakarta.persistence.OneToMany;
+    import jakarta.persistence.JoinColumn;
+    import jakarta.persistence.EntityManager;
+    import jakarta.persistence.PersistenceContext;
+    ```
+  ruleID: javax-to-jakarta-imports-00004
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.persistence.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.transaction imports with jakarta.transaction imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Transactions Guide
+      url: https://jakarta.ee/specifications/transactions/
+  message: |
+    Replace javax.transaction imports with jakarta.transaction imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.transaction.Transactional;
+    import javax.transaction.UserTransaction;
+    import javax.transaction.TransactionManager;
+    ```
+    
+    After:
+    ```java
+    import jakarta.transaction.Transactional;
+    import jakarta.transaction.UserTransaction;
+    import jakarta.transaction.TransactionManager;
+    ```
+  ruleID: javax-to-jakarta-imports-00005
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.transaction.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.validation imports with jakarta.validation imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Bean Validation Guide
+      url: https://jakarta.ee/specifications/bean-validation/
+  message: |
+    Replace javax.validation imports with jakarta.validation imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.validation.Valid;
+    import javax.validation.constraints.NotNull;
+    import javax.validation.constraints.NotEmpty;
+    import javax.validation.constraints.Size;
+    import javax.validation.constraints.Email;
+    import javax.validation.constraints.Min;
+    import javax.validation.constraints.Max;
+    import javax.validation.Validator;
+    import javax.validation.ConstraintViolation;
+    ```
+    
+    After:
+    ```java
+    import jakarta.validation.Valid;
+    import jakarta.validation.constraints.NotNull;
+    import jakarta.validation.constraints.NotEmpty;
+    import jakarta.validation.constraints.Size;
+    import jakarta.validation.constraints.Email;
+    import jakarta.validation.constraints.Min;
+    import jakarta.validation.constraints.Max;
+    import jakarta.validation.Validator;
+    import jakarta.validation.ConstraintViolation;
+    ```
+  ruleID: javax-to-jakarta-imports-00006
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.validation.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.servlet imports with jakarta.servlet imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Servlet Guide
+      url: https://jakarta.ee/specifications/servlet/
+  message: |
+    Replace javax.servlet imports with jakarta.servlet imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.servlet.http.HttpServletRequest;
+    import javax.servlet.http.HttpServletResponse;
+    import javax.servlet.ServletContext;
+    import javax.servlet.Filter;
+    import javax.servlet.FilterChain;
+    ```
+    
+    After:
+    ```java
+    import jakarta.servlet.http.HttpServletRequest;
+    import jakarta.servlet.http.HttpServletResponse;
+    import jakarta.servlet.ServletContext;
+    import jakarta.servlet.Filter;
+    import jakarta.servlet.FilterChain;
+    ```
+    
+    Note: In Quarkus, servlet APIs are less commonly used. Consider using JAX-RS or Reactive Routes instead.
+  ruleID: javax-to-jakarta-imports-00007
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.servlet.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.json imports with jakarta.json imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta JSON Processing Guide
+      url: https://jakarta.ee/specifications/jsonp/
+  message: |
+    Replace javax.json imports with jakarta.json imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.json.Json;
+    import javax.json.JsonObject;
+    import javax.json.JsonArray;
+    import javax.json.JsonReader;
+    import javax.json.JsonWriter;
+    ```
+    
+    After:
+    ```java
+    import jakarta.json.Json;
+    import jakarta.json.JsonObject;
+    import jakarta.json.JsonArray;
+    import jakarta.json.JsonReader;
+    import jakarta.json.JsonWriter;
+    ```
+  ruleID: javax-to-jakarta-imports-00008
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.json.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.security imports with jakarta.security imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Security Guide
+      url: https://jakarta.ee/specifications/security/
+  message: |
+    Replace javax.security imports with jakarta.security imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.security.enterprise.SecurityContext;
+    import javax.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism;
+    import javax.security.enterprise.credential.UsernamePasswordCredential;
+    ```
+    
+    After:
+    ```java
+    import jakarta.security.enterprise.SecurityContext;
+    import jakarta.security.enterprise.authentication.mechanism.http.HttpAuthenticationMechanism;
+    import jakarta.security.enterprise.credential.UsernamePasswordCredential;
+    ```
+  ruleID: javax-to-jakarta-imports-00009
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.security.*
+
+- category: mandatory
+  customVariables: []
+  description: Replace javax.annotation imports with jakarta.annotation imports
+  effort: 1
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Jakarta Annotations Guide
+      url: https://jakarta.ee/specifications/annotations/
+  message: |
+    Replace javax.annotation imports with jakarta.annotation imports for Quarkus 3.x compatibility.
+    
+    Before:
+    ```java
+    import javax.annotation.PostConstruct;
+    import javax.annotation.PreDestroy;
+    import javax.annotation.Nullable;
+    import javax.annotation.Nonnull;
+    import javax.annotation.security.RolesAllowed;
+    import javax.annotation.security.PermitAll;
+    import javax.annotation.security.DenyAll;
+    ```
+    
+    After:
+    ```java
+    import jakarta.annotation.PostConstruct;
+    import jakarta.annotation.PreDestroy;
+    import jakarta.annotation.Nullable;
+    import jakarta.annotation.Nonnull;
+    import jakarta.annotation.security.RolesAllowed;
+    import jakarta.annotation.security.PermitAll;
+    import jakarta.annotation.security.DenyAll;
+    ```
+  ruleID: javax-to-jakarta-imports-00010
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: javax.annotation.*
+
+
+
+

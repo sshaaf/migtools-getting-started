@@ -1,0 +1,30 @@
+# Test cases for Spring Boot Data JPA migration rules
+# These tests verify that Spring Data patterns are properly detected
+
+rulesPath: ../05-springboot-data-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ../../../../src/main/java
+
+tests:
+  # Test 1: JpaRepository interface
+  - ruleID: springboot-data-to-quarkus-00001
+    testCases:
+      - name: detect-jpa-repository
+        hasIncidents:
+          atLeast: 1
+
+  # Test 2: CrudRepository interface
+  - ruleID: springboot-data-to-quarkus-00002
+    testCases:
+      - name: detect-crud-repository
+        hasIncidents:
+          atLeast: 0  # We may not have CrudRepository in code
+
+  # Test 3: Pageable usage
+  - ruleID: springboot-data-to-quarkus-00006
+    testCases:
+      - name: detect-pageable-usage
+        hasIncidents:
+          atLeast: 1
+

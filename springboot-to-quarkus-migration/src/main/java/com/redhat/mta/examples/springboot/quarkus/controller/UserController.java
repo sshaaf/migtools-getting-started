@@ -7,99 +7,120 @@ import com.redhat.mta.examples.springboot.quarkus.model.User;
 import com.redhat.mta.examples.springboot.quarkus.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * User Controller demonstrating Spring Web patterns for Quarkus migration.
+ * 
+ * Deprecated Spring Boot patterns demonstrated:
+ * - @RestController instead of JAX-RS @Path
+ * - @RequestMapping, @GetMapping, @PostMapping, @PutMapping, @DeleteMapping instead of JAX-RS @GET, @POST, etc.
+ * - @PathVariable instead of @PathParam
+ * - @RequestParam instead of @QueryParam  
+ * - @RequestBody for request body binding
+ * - @RequestHeader instead of @HeaderParam
+ * - @Autowired instead of @Inject
+ * - @PreAuthorize instead of @RolesAllowed
+ * - ResponseEntity instead of JAX-RS Response
+ * - HttpStatus instead of Response.Status
  */
-@Path("/api/users")
+@RestController
+@RequestMapping("/api/users")
 @Validated
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @Inject
-    UserService userService;
+    @Autowired
+    private UserService userService;
 
     /**
      * Get all users with pagination
      */
-    @GET
-    @RolesAllowed({"ADMIN", "USER"})
-    public Response getAllUsers(
-            @QueryParam("page") @DefaultValue("0") int page,
-            @QueryParam("size") @DefaultValue("20") int size,
-            @QueryParam("firstName") String firstName,
-            @QueryParam("lastName") String lastName,
-            @QueryParam("email") String email,
-            @QueryParam("active") Boolean active,
-            @HeaderParam("X-Client-Version") String clientVersion) {
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) Boolean active,
+            @RequestHeader(value = "X-Client-Version", required = false) String clientVersion) {
         
         logger.debug("Getting all users with pagination: page={}, size={}, clientVersion={}", page, size, clientVersion);
         
-        List<User> users;
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage;
+        
         if (firstName != null || lastName != null || email != null || active != null) {
-            users = userService.searchUsers(firstName, lastName, email, active, page, size);
+            userPage = userService.searchUsers(firstName, lastName, email, active, pageable);
         } else {
-            users = userService.findAll(page, size);
+            userPage = userService.findAll(pageable);
         }
         
-        List<UserResponse> userResponses = users.stream().map(this::convertToResponse).collect(Collectors.toList());
-        return Response.ok(userResponses).build();
+        List<UserResponse> userResponses = userPage.getContent().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(userResponses);
     }
 
     /**
      * Get user by ID
      */
-    @GET
-    @Path("/{id}")
-    @RolesAllowed({"ADMIN", "USER"})
-    public Response getUserById(
-            @PathParam("id") @NotNull Long id,
-            @HeaderParam("Accept-Language") @DefaultValue("en") String acceptLanguage) {
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<UserResponse> getUserById(
+            @PathVariable @NotNull Long id,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String acceptLanguage) {
         
         logger.debug("Getting user by ID: {}, language: {}", id, acceptLanguage);
         
         User user = userService.findById(id);
         UserResponse response = convertToResponse(user);
         
-        return Response.ok(response)
+        return ResponseEntity.ok()
                 .header("Content-Language", acceptLanguage)
-                .build();
+                .body(response);
     }
 
     /**
      * Get user by username
      */
-    @GET
-    @Path("/username/{username}")
-    @RolesAllowed("ADMIN")
-    public Response getUserByUsername(
-            @PathParam("username") String username) {
+    @GetMapping("/username/{username}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> getUserByUsername(
+            @PathVariable String username) {
         
         logger.debug("Getting user by username: {}", username);
         
         return userService.findByUsername(username)
                 .map(this::convertToResponse)
-                .map(userResponse -> Response.ok(userResponse).build())
-                .orElse(Response.status(Response.Status.NOT_FOUND).build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
      * Create new user
      */
-    @POST
-    @RolesAllowed("ADMIN")
-    public Response createUser(
-            @Valid UserCreateRequest request,
-            @HeaderParam("X-Request-ID") String requestId) {
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> createUser(
+            @Valid @RequestBody UserCreateRequest request,
+            @RequestHeader(value = "X-Request-ID", required = false) String requestId) {
         
         logger.info("Creating new user: {}, requestId: {}", request.getUsername(), requestId);
         
@@ -107,22 +128,20 @@ public class UserController {
         User createdUser = userService.createUser(user);
         UserResponse response = convertToResponse(createdUser);
         
-        return Response.status(Response.Status.CREATED)
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .header("X-Request-ID", requestId)
-                .entity(response)
-                .build();
+                .body(response);
     }
 
     /**
      * Update existing user
      */
-    @PUT
-    @Path("/{id}")
-    @RolesAllowed({"ADMIN", "USER"})
-    public Response updateUser(
-            @PathParam("id") @NotNull Long id,
-            @Valid UserUpdateRequest request,
-            @HeaderParam("If-Match") String ifMatch) {
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable @NotNull Long id,
+            @Valid @RequestBody UserUpdateRequest request,
+            @RequestHeader(value = "If-Match", required = false) String ifMatch) {
         
         logger.info("Updating user: {}, ifMatch: {}", id, ifMatch);
         
@@ -132,91 +151,85 @@ public class UserController {
         User updatedUser = userService.updateUser(user);
         UserResponse response = convertToResponse(updatedUser);
         
-        return Response.ok()
+        return ResponseEntity.ok()
                 .header("ETag", "\"" + updatedUser.getUpdatedAt().toString() + "\"")
-                .entity(response)
-                .build();
+                .body(response);
     }
 
     /**
      * Update user status (activate/deactivate)
      */
-    @PATCH
-    @Path("/{id}/status")
-    @RolesAllowed("ADMIN")
-    public Response updateUserStatus(
-            @PathParam("id") @NotNull Long id,
-            @QueryParam("active") boolean active) {
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUserStatus(
+            @PathVariable @NotNull Long id,
+            @RequestParam boolean active) {
         
         logger.info("Updating user status: {} to {}", id, active);
         
         User updatedUser = userService.updateUserStatus(id, active);
         UserResponse response = convertToResponse(updatedUser);
         
-        return Response.ok(response).build();
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Delete user
      */
-    @DELETE
-    @Path("/{id}")
-    @RolesAllowed("ADMIN")
-    public Response deleteUser(
-            @PathParam("id") @NotNull Long id,
-            @HeaderParam("X-Confirm-Delete") @DefaultValue("false") boolean confirmDelete) {
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable @NotNull Long id,
+            @RequestHeader(value = "X-Confirm-Delete", defaultValue = "false") boolean confirmDelete) {
         
         if (!confirmDelete) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return ResponseEntity.badRequest().build();
         }
         
         logger.info("Deleting user: {}", id);
         userService.deleteUser(id);
         
-        return Response.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
      * Add role to user
      */
-    @POST
-    @Path("/{userId}/roles/{roleId}")
-    @RolesAllowed("ADMIN")
-    public Response addRoleToUser(
-            @PathParam("userId") @NotNull Long userId,
-            @PathParam("roleId") @NotNull Long roleId) {
+    @PostMapping("/{userId}/roles/{roleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> addRoleToUser(
+            @PathVariable @NotNull Long userId,
+            @PathVariable @NotNull Long roleId) {
         
         logger.info("Adding role {} to user {}", roleId, userId);
         
         User updatedUser = userService.addRoleToUser(userId, roleId);
         UserResponse response = convertToResponse(updatedUser);
         
-        return Response.ok(response).build();
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Remove role from user
      */
-    @DELETE
-    @Path("/{userId}/roles/{roleId}")
-    @RolesAllowed("ADMIN")
-    public Response removeRoleFromUser(
-            @PathParam("userId") @NotNull Long userId,
-            @PathParam("roleId") @NotNull Long roleId) {
+    @DeleteMapping("/{userId}/roles/{roleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> removeRoleFromUser(
+            @PathVariable @NotNull Long userId,
+            @PathVariable @NotNull Long roleId) {
         
         logger.info("Removing role {} from user {}", roleId, userId);
         userService.removeRoleFromUser(userId, roleId);
         
-        return Response.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
      * Get active users
      */
-    @GET
-    @Path("/active")
-    @RolesAllowed("ADMIN")
-    public Response getActiveUsers() {
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getActiveUsers() {
         logger.debug("Getting all active users");
         
         List<User> activeUsers = userService.findActiveUsers();
@@ -224,17 +237,16 @@ public class UserController {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
         
-        return Response.ok(responses).build();
+        return ResponseEntity.ok(responses);
     }
 
     /**
      * Get users by role
      */
-    @GET
-    @Path("/role/{roleName}")
-    @RolesAllowed("ADMIN")
-    public Response getUsersByRole(
-            @PathParam("roleName") String roleName) {
+    @GetMapping("/role/{roleName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getUsersByRole(
+            @PathVariable String roleName) {
         
         logger.debug("Getting users by role: {}", roleName);
         
@@ -243,32 +255,31 @@ public class UserController {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
         
-        return Response.ok(responses).build();
+        return ResponseEntity.ok(responses);
     }
 
     /**
      * Get user count
      */
-    @GET
-    @Path("/count")
-    @RolesAllowed("ADMIN")
-    public Response getUserCount(
-            @QueryParam("activeOnly") @DefaultValue("true") boolean activeOnly) {
+    @GetMapping("/count")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Long> getUserCount(
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
         
-        long count = activeOnly ? userService.countActiveUsers() : userService.findAll(0, Integer.MAX_VALUE).size();
-        return Response.ok(count).build();
+        long count = activeOnly ? userService.countActiveUsers() : 
+                     userService.findAll(PageRequest.of(0, Integer.MAX_VALUE)).getTotalElements();
+        return ResponseEntity.ok(count);
     }
 
     /**
      * Send welcome email (async operation)
      */
-    @POST
-    @Path("/{id}/welcome-email")
-    @RolesAllowed("ADMIN")
-    public Response sendWelcomeEmail(@PathParam("id") @NotNull Long id) {
+    @PostMapping("/{id}/welcome-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> sendWelcomeEmail(@PathVariable @NotNull Long id) {
         logger.info("Triggering welcome email for user: {}", id);
         userService.sendWelcomeEmailAsync(id);
-        return Response.status(Response.Status.ACCEPTED).build();
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
     // Utility methods for conversion
@@ -318,4 +329,3 @@ public class UserController {
         return user;
     }
 }
-

@@ -37,6 +37,7 @@
   when:
     java.referenced:
       pattern: org.springframework.data.jpa.repository.JpaRepository
+      location: INHERITANCE
 
 - category: mandatory
   customVariables: []
@@ -70,6 +71,7 @@
   when:
     java.referenced:
       pattern: org.springframework.data.repository.CrudRepository
+      location: INHERITANCE
 
 - category: mandatory
   customVariables: []
@@ -225,6 +227,7 @@
   when:
     java.referenced:
       pattern: org.springframework.data.domain.Pageable
+      location: TYPE
 
 - category: mandatory
   customVariables: []
@@ -261,6 +264,7 @@
   when:
     java.referenced:
       pattern: org.springframework.data.domain.Sort
+      location: TYPE
 
 - category: mandatory
   customVariables: []

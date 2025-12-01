@@ -363,5 +363,7 @@
     or:
     - java.referenced:
         pattern: reactor.core.publisher.Mono
+        location: TYPE
     - java.referenced:
         pattern: reactor.core.publisher.Flux
+        location: TYPE

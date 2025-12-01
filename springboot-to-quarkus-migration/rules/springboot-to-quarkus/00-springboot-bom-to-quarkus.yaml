@@ -1,0 +1,119 @@
+- category: mandatory
+  customVariables: []
+  description: Add Quarkus BOM when Spring Boot dependencies are detected
+  effort: 3
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus - Building applications with Maven Guide
+      url: https://quarkus.io/guides/maven-tooling
+    - title: Quarkus BOM Documentation
+      url: https://quarkus.io/guides/platform
+  message: |
+    When migrating from Spring Boot to Quarkus, you must add the Quarkus BOM (Bill of Materials) to manage Quarkus extension versions.
+    
+    Add the Quarkus BOM to your `<dependencyManagement>` section:
+    ```xml
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus.platform</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>3.28.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    ```
+    
+    Also add the Quarkus version property to your `<properties>` section:
+    ```xml
+    <properties>
+        <quarkus.platform.version>3.28.2</quarkus.platform.version>
+    </properties>
+    ```
+    
+    The Quarkus BOM:
+    - Manages all Quarkus extension versions automatically
+    - Ensures compatibility between different Quarkus extensions
+    - Eliminates the need to specify versions for individual Quarkus dependencies
+    - Is essential for proper Quarkus dependency management
+  ruleID: springboot-bom-to-quarkus-00001
+  when:
+    or:
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-web
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-data-jpa
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-security
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-actuator
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-test
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-validation
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-cache
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-webflux
+
+- category: mandatory
+  customVariables: []
+  description: Add Quarkus Maven Plugin when migrating from Spring Boot
+  effort: 2
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Maven Plugin Guide
+      url: https://quarkus.io/guides/maven-tooling
+  message: |
+    When migrating from Spring Boot to Quarkus, you must add the Quarkus Maven Plugin to enable Quarkus development features.
+    
+    Add the Quarkus Maven Plugin to your `<build><plugins>` section:
+    ```xml
+    <plugin>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>build</goal>
+                    <goal>generate-code</goal>
+                    <goal>generate-code-tests</goal>
+                </goals>
+            </execution>
+        </executions>
+    </plugin>
+    ```
+    
+    The Quarkus Maven Plugin provides:
+    - `mvn quarkus:dev` - Development mode with hot reload
+    - `mvn quarkus:build` - Build the application
+    - Native image compilation support
+    - Code generation for various Quarkus features
+  ruleID: springboot-bom-to-quarkus-00002
+  when:
+    or:
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-web
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-data-jpa
+      - java.dependency:
+          lowerbound: 0.0.0
+          name: org.springframework.boot.spring-boot-starter-security

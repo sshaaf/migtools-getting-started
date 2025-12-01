@@ -202,5 +202,7 @@
     or:
     - java.referenced:
         pattern: org.springframework.web.context.request.async.DeferredResult
+        location: TYPE
     - java.referenced:
         pattern: java.util.concurrent.CompletableFuture
+        location: TYPE
