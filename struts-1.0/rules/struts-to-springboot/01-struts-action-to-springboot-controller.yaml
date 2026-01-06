@@ -10,60 +10,82 @@
   links:
     - title: Spring MVC Controllers
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-controller
-    - title: Spring @Controller Annotation
-      url: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/stereotype/Controller.html
   message: |
     Struts `Action` classes must be converted to Spring MVC `@Controller` classes.
     
-    **Before (Struts 1.x Action):**
-    ```java
-    import org.apache.struts.action.Action;
-    import org.apache.struts.action.ActionForm;
-    import org.apache.struts.action.ActionForward;
-    import org.apache.struts.action.ActionMapping;
+    **Class Declaration Changes:**
     
-    public class ListAccountsAction extends Action {
-        @Override
+    | Aspect | From (Struts) | To (Spring) |
+    |--------|---------------|-------------|
+    | Package | `*.action.*` | `*.controller.*` |
+    | Extends | `extends Action` | Remove (no superclass) |
+    | Annotations | None | `@Controller` + `@RequestMapping` |
+    | Naming | `*Action` | `*Controller` |
+    
+    **Before (Struts Action):**
+    ```java
+    package com.example.action;
+    
+    import org.apache.struts.action.*;
+    import javax.servlet.http.*;
+    
+    public class ListItemsAction extends Action {
+        private ItemDAO itemDAO = new ItemDAO();
+    
         public ActionForward execute(ActionMapping mapping, ActionForm form,
-                HttpServletRequest request, HttpServletResponse response) throws Exception {
-            List<Account> accounts = accountDAO.findAll();
-            request.setAttribute("accounts", accounts);
-            return mapping.findForward("success");
+                                    HttpServletRequest request,
+                                    HttpServletResponse response) {
+            try {
+                List<Item> items = itemDAO.findAll();
+                request.setAttribute("items", items);
+                return mapping.findForward("success");
+            } catch (Exception e) {
+                request.setAttribute("errorMessage", e.getMessage());
+                return mapping.findForward("error");
+            }
         }
     }
     ```
     
-    **After (Spring MVC Controller):**
+    **After (Spring Controller):**
     ```java
+    package com.example.controller;
+    
     import org.springframework.stereotype.Controller;
     import org.springframework.ui.Model;
-    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.*;
     
     @Controller
-    public class AccountController {
-        
-        private final AccountService accountService;
-        
-        public AccountController(AccountService accountService) {
-            this.accountService = accountService;
+    @RequestMapping("/items")
+    public class ItemController {
+    
+        private final ItemRepository itemRepository;
+    
+        public ItemController(ItemRepository itemRepository) {
+            this.itemRepository = itemRepository;
         }
-        
-        @GetMapping("/accounts")
-        public String listAccounts(Model model) {
-            List<Account> accounts = accountService.findAll();
-            model.addAttribute("accounts", accounts);
-            return "list"; // Returns view name
+    
+        @GetMapping
+        public String listItems(Model model) {
+            try {
+                List<Item> items = itemRepository.findAll();
+                model.addAttribute("items", items);
+                return "items/list";
+            } catch (Exception e) {
+                model.addAttribute("errorMessage", e.getMessage());
+                return "error";
+            }
         }
     }
     ```
     
-    Key changes:
-    - Replace `Action` base class with `@Controller` annotation
-    - Replace `execute()` method with handler methods annotated with `@GetMapping`, `@PostMapping`, etc.
-    - Replace `ActionMapping.findForward("name")` with returning the view name as a String
-    - Replace `request.setAttribute()` with `Model.addAttribute()`
-    - Use constructor injection for dependencies (replaces manual DAO instantiation)
-  ruleID: struts-action-to-springboot-00001
+    **Key Changes:**
+    - Replace `extends Action` with `@Controller` annotation
+    - Use constructor injection for dependencies (not field initialization)
+    - Replace `execute()` with methods annotated with `@GetMapping`/`@PostMapping`
+    - Replace `request.setAttribute()` with `model.addAttribute()`
+    - Replace `mapping.findForward("name")` with returning view name string
+  ruleID: struts-action-00001
   when:
     java.referenced:
       location: INHERITANCE
@@ -80,7 +102,16 @@
     - title: Spring MVC View Resolution
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-viewresolver
   message: |
-    Struts `ActionForward` is replaced by returning view names or `ModelAndView` in Spring MVC.
+    Struts `ActionForward` is replaced by returning view names as `String` in Spring MVC.
+    
+    **Navigation Transformation:**
+    
+    | Struts Pattern | Spring Equivalent |
+    |----------------|-------------------|
+    | `mapping.findForward("success")` | `return "viewName";` |
+    | `mapping.findForward("error")` | `return "error";` |
+    | `new ActionForward("/path", true)` | `return "redirect:/path";` |
+    | Forward to another action | `return "forward:/path";` |
     
     **Before (Struts):**
     ```java
@@ -91,17 +122,16 @@
         // Error case
         return mapping.findForward("error");
         
-        // Redirect
-        return new ActionForward("/accounts.do", true);
+        // Redirect after POST
+        return new ActionForward("/list.do", true);
     }
     ```
     
     **After (Spring MVC):**
     ```java
-    @GetMapping("/accounts")
-    public String listAccounts(Model model) {
-        // Success - returns view name
-        return "accounts/list";
+    @GetMapping("/view")
+    public String viewItem(Model model) {
+        return "items/view";  // Forward to view
     }
     
     @GetMapping("/error")
@@ -109,19 +139,19 @@
         return "error";
     }
     
-    @PostMapping("/accounts")
-    public String createAccount(@ModelAttribute Account account) {
-        accountService.save(account);
-        // Redirect after POST (PRG pattern)
-        return "redirect:/accounts";
+    @PostMapping("/save")
+    public String saveItem(@ModelAttribute Item item) {
+        itemService.save(item);
+        return "redirect:/items";  // Redirect after POST (PRG pattern)
     }
     ```
     
-    Spring MVC view resolution:
-    - Return `"viewName"` for forward to view
-    - Return `"redirect:/path"` for redirect
-    - Return `"forward:/path"` for forward to another handler
-  ruleID: struts-action-to-springboot-00002
+    **Derive view name from struts-config.xml:**
+    ```xml
+    <forward name="success" path="/WEB-INF/jsp/items/list.jsp"/>
+    ```
+    Becomes: `return "items/list";` (remove prefix/suffix)
+  ruleID: struts-action-00002
   when:
     java.referenced:
       location: IMPORT
@@ -129,7 +159,7 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace ActionMapping with Spring @RequestMapping
+  description: Replace ActionMapping with Spring @RequestMapping annotations
   effort: 2
   labels:
     - konveyor.io/source=struts
@@ -138,51 +168,53 @@
     - title: Spring @RequestMapping
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-requestmapping
   message: |
-    Struts `ActionMapping` configuration in struts-config.xml is replaced by Spring `@RequestMapping` annotations.
+    Struts `ActionMapping` configuration is replaced by Spring `@RequestMapping` annotations.
     
-    **Before (struts-config.xml):**
+    **Derive mappings from struts-config.xml:**
     ```xml
-    <action path="/listAccounts"
-            type="com.redhat.bank.action.ListAccountsAction"
-            scope="request">
-        <forward name="success" path="/list.jsp"/>
-        <forward name="error" path="/error.jsp"/>
+    <action path="/listItems" type="com.example.action.ListItemsAction">
+        <forward name="success" path="/items/list.jsp"/>
+    </action>
+    
+    <action path="/saveItem" type="com.example.action.SaveItemAction"
+            name="itemForm" validate="true" input="/edit.jsp">
+        <forward name="success" path="/listItems.do" redirect="true"/>
     </action>
     ```
     
-    **After (Spring @Controller):**
+    **Spring Controller:**
     ```java
     @Controller
-    @RequestMapping("/accounts")
-    public class AccountController {
-        
-        @GetMapping
-        public String listAccounts(Model model) {
-            // ...
-            return "list";
-        }
-        
-        @GetMapping("/{id}")
-        public String viewAccount(@PathVariable Long id, Model model) {
-            // ...
-            return "view";
-        }
-        
-        @PostMapping
-        public String saveAccount(@ModelAttribute AccountDTO account) {
-            // ...
-            return "redirect:/accounts";
-        }
+    @RequestMapping("/items")
+    public class ItemController {
+    
+        @GetMapping                    // GET /items (list)
+        public String list(Model model) { ... }
+    
+        @GetMapping("/{id}")           // GET /items/{id} (view)
+        public String view(@PathVariable Long id, Model model) { ... }
+    
+        @GetMapping("/{id}/edit")      // GET /items/{id}/edit (edit form)
+        public String edit(@PathVariable Long id, Model model) { ... }
+    
+        @PostMapping                   // POST /items (create/save)
+        public String save(@Valid @ModelAttribute ItemDTO item,
+                          BindingResult result) { ... }
+    
+        @DeleteMapping("/{id}")        // DELETE /items/{id}
+        public String delete(@PathVariable Long id) { ... }
     }
     ```
     
-    Mapping annotations:
-    - `@GetMapping` - HTTP GET requests
-    - `@PostMapping` - HTTP POST requests
-    - `@PutMapping` - HTTP PUT requests
-    - `@DeleteMapping` - HTTP DELETE requests
-    - `@RequestMapping` - Generic mapping
-  ruleID: struts-action-to-springboot-00003
+    **HTTP Method Mapping Rules:**
+    
+    | Struts Pattern | HTTP Method |
+    |----------------|-------------|
+    | Has `ActionForm` + `validate="true"` | `@PostMapping` |
+    | Action name contains save/create/update/delete | `@PostMapping` |
+    | Action name contains list/view/show/edit (form) | `@GetMapping` |
+    | Default (no indicators) | `@GetMapping` |
+  ruleID: struts-action-00003
   when:
     java.referenced:
       location: IMPORT
@@ -190,7 +222,7 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace ActionMessages with Spring flash attributes or BindingResult
+  description: Replace ActionMessages with Spring RedirectAttributes
   effort: 2
   labels:
     - konveyor.io/source=struts
@@ -199,29 +231,30 @@
     - title: Spring Flash Attributes
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-flash-attributes
   message: |
-    Struts `ActionMessages` for success/error messages should be replaced with Spring's `RedirectAttributes` flash attributes.
+    Struts `ActionMessages` for success/error messages should be replaced with Spring's
+    `RedirectAttributes` flash attributes.
     
     **Before (Struts):**
     ```java
     ActionMessages messages = new ActionMessages();
     messages.add(ActionMessages.GLOBAL_MESSAGE, 
-        new ActionMessage("message.account.saved", account.getAccountNumber()));
+        new ActionMessage("message.item.saved", item.getName()));
     saveMessages(request, messages);
     return mapping.findForward("success");
     ```
     
     **After (Spring MVC):**
     ```java
-    @PostMapping("/accounts")
-    public String saveAccount(@ModelAttribute AccountDTO account,
-                              RedirectAttributes redirectAttributes) {
-        accountService.save(account);
+    @PostMapping("/save")
+    public String save(@ModelAttribute ItemDTO item,
+                      RedirectAttributes redirectAttributes) {
+        itemService.save(item);
         
         // Flash attribute survives redirect
         redirectAttributes.addFlashAttribute("successMessage", 
-            "Account " + account.getAccountNumber() + " saved successfully");
+            "Item " + item.getName() + " saved successfully");
         
-        return "redirect:/accounts";
+        return "redirect:/items";
     }
     ```
     
@@ -230,20 +263,22 @@
     <div th:if="${successMessage}" class="alert alert-success">
         <span th:text="${successMessage}"></span>
     </div>
+    
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <span th:text="${errorMessage}"></span>
+    </div>
     ```
     
-    For validation errors, use `BindingResult`:
+    **For i18n messages, use MessageSource:**
     ```java
-    @PostMapping("/accounts")
-    public String saveAccount(@Valid @ModelAttribute AccountDTO account,
-                              BindingResult result, Model model) {
-        if (result.hasErrors()) {
-            return "edit"; // Return to form with errors
-        }
-        // ...
-    }
+    @Autowired
+    private MessageSource messageSource;
+    
+    String msg = messageSource.getMessage("message.item.saved", 
+        new Object[]{item.getName()}, locale);
+    redirectAttributes.addFlashAttribute("successMessage", msg);
     ```
-  ruleID: struts-action-to-springboot-00004
+  ruleID: struts-action-00004
   when:
     java.referenced:
       location: IMPORT
@@ -260,52 +295,56 @@
     - title: Spring Validation
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#validation
   message: |
-    Struts `ActionErrors` for validation errors should be replaced with Spring's `BindingResult` and Bean Validation.
+    Struts `ActionErrors` for validation errors should be replaced with Spring's
+    `BindingResult` and Bean Validation.
     
-    **Before (Struts ActionForm):**
+    **Before (Struts ActionForm validation):**
     ```java
     public ActionErrors validate(ActionMapping mapping, HttpServletRequest request) {
         ActionErrors errors = new ActionErrors();
-        if (holderName == null || holderName.trim().isEmpty()) {
-            errors.add("holderName", new ActionMessage("error.holderName.required"));
+        if (name == null || name.trim().isEmpty()) {
+            errors.add("name", new ActionMessage("error.name.required"));
         }
         return errors;
     }
     ```
     
     **After (Spring Bean Validation):**
+    
+    **1. DTO with validation annotations:**
     ```java
-    // DTO with validation annotations
-    public class AccountDTO {
-        @NotBlank(message = "Account holder name is required")
-        private String holderName;
-        
-        @NotNull(message = "Account type is required")
-        private AccountType accountType;
+    public class ItemDTO {
+        @NotBlank(message = "Name is required")
+        private String name;
         
         @Email(message = "Invalid email format")
         private String email;
     }
+    ```
     
-    // Controller with validation
-    @PostMapping("/accounts")
-    public String saveAccount(@Valid @ModelAttribute("account") AccountDTO account,
-                              BindingResult bindingResult, Model model) {
+    **2. Controller with @Valid:**
+    ```java
+    @PostMapping("/save")
+    public String save(@Valid @ModelAttribute("item") ItemDTO item,
+                      BindingResult bindingResult,
+                      Model model) {
         if (bindingResult.hasErrors()) {
-            return "edit"; // Return to form with errors displayed
+            return "items/edit";  // Return to form with errors
         }
-        accountService.save(account);
-        return "redirect:/accounts";
+        itemService.save(item);
+        return "redirect:/items";
     }
     ```
     
-    **Display errors in Thymeleaf:**
+    **3. Display errors in Thymeleaf:**
     ```html
-    <div th:if="${#fields.hasErrors('holderName')}" class="error">
-        <span th:errors="*{holderName}"></span>
+    <div th:if="${#fields.hasErrors('name')}" class="error">
+        <span th:errors="*{name}"></span>
     </div>
     ```
-  ruleID: struts-action-to-springboot-00005
+    
+    **Note:** `BindingResult` must be immediately after the `@Valid` parameter.
+  ruleID: struts-action-00005
   when:
     java.referenced:
       location: IMPORT
@@ -313,53 +352,170 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace ActionMessage with Spring MessageSource
+  description: Replace request.setAttribute with Model.addAttribute
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Model Interface
+      url: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/ui/Model.html
+  message: |
+    Replace `HttpServletRequest.setAttribute()` with Spring's `Model.addAttribute()`.
+    
+    **Before (Struts):**
+    ```java
+    public ActionForward execute(..., HttpServletRequest request, ...) {
+        List<Item> items = itemDAO.findAll();
+        request.setAttribute("items", items);
+        request.setAttribute("totalCount", items.size());
+        return mapping.findForward("success");
+    }
+    ```
+    
+    **After (Spring MVC):**
+    ```java
+    @GetMapping
+    public String list(Model model) {
+        List<Item> items = itemRepository.findAll();
+        model.addAttribute("items", items);
+        model.addAttribute("totalCount", items.size());
+        return "items/list";
+    }
+    ```
+    
+    **Note:** You can also use `ModelAndView`:
+    ```java
+    @GetMapping
+    public ModelAndView list() {
+        ModelAndView mav = new ModelAndView("items/list");
+        mav.addObject("items", itemRepository.findAll());
+        return mav;
+    }
+    ```
+    
+    **Prefer `Model` parameter** - cleaner and simpler.
+  ruleID: struts-action-00006
+  when:
+    java.referenced:
+      location: METHOD_CALL
+      pattern: javax.servlet.http.HttpServletRequest.setAttribute*
+
+- category: mandatory
+  customVariables: []
+  description: Replace request.getParameter with @RequestParam
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring @RequestParam
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-requestparam
+  message: |
+    Replace `HttpServletRequest.getParameter()` with Spring's `@RequestParam` annotation.
+    
+    **Before (Struts):**
+    ```java
+    public ActionForward execute(..., HttpServletRequest request, ...) {
+        String id = request.getParameter("id");
+        String name = request.getParameter("name");
+        String page = request.getParameter("page");
+        if (page == null) page = "1";
+        // ...
+    }
+    ```
+    
+    **After (Spring MVC):**
+    ```java
+    @GetMapping("/view")
+    public String view(@RequestParam("id") Long id,
+                      @RequestParam("name") String name,
+                      @RequestParam(value = "page", defaultValue = "1") int page,
+                      Model model) {
+        // Parameters are automatically bound and converted
+    }
+    ```
+    
+    **For path variables (RESTful style):**
+    ```java
+    @GetMapping("/{id}")
+    public String view(@PathVariable("id") Long id, Model model) {
+        // URL: /items/123
+    }
+    ```
+    
+    **Spring handles:**
+    - Type conversion (String → Long, int, etc.)
+    - Default values
+    - Optional parameters
+    - Validation
+  ruleID: struts-action-00007
+  when:
+    java.referenced:
+      location: METHOD_CALL
+      pattern: javax.servlet.http.HttpServletRequest.getParameter*
+
+- category: mandatory
+  customVariables: []
+  description: Use constructor injection for dependencies
   effort: 2
   labels:
     - konveyor.io/source=struts
     - konveyor.io/target=springboot
   links:
-    - title: Spring MessageSource
-      url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#context-functionality-messagesource
+    - title: Spring Dependency Injection
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-constructor-injection
   message: |
-    Struts `ActionMessage` for i18n messages should be replaced with Spring's `MessageSource`.
+    Replace manual DAO instantiation with Spring constructor injection.
     
-    **Before (Struts):**
+    **Before (Struts - manual instantiation):**
     ```java
-    errors.add("holderName", new ActionMessage("error.holderName.required"));
-    messages.add(ActionMessages.GLOBAL_MESSAGE, 
-        new ActionMessage("message.account.saved", accountNumber));
-    ```
-    
-    **After (Spring):**
-    
-    1. Create `messages.properties` in `src/main/resources`:
-    ```properties
-    error.holderName.required=Account holder name is required
-    message.account.saved=Account {0} saved successfully
-    ```
-    
-    2. Use in controller:
-    ```java
-    @Autowired
-    private MessageSource messageSource;
-    
-    public String saveAccount(..., Locale locale, RedirectAttributes redirectAttributes) {
-        String message = messageSource.getMessage("message.account.saved", 
-            new Object[]{accountNumber}, locale);
-        redirectAttributes.addFlashAttribute("successMessage", message);
-        return "redirect:/accounts";
+    public class ItemAction extends Action {
+        private ItemDAO itemDAO = new ItemDAO();
+        private UserDAO userDAO = new UserDAO();
+        
+        public ActionForward execute(...) {
+            List<Item> items = itemDAO.findAll();
+            // ...
+        }
     }
     ```
     
-    3. Or use directly in Thymeleaf:
-    ```html
-    <span th:text="#{error.holderName.required}"></span>
-    <span th:text="#{message.account.saved(${account.accountNumber})}"></span>
+    **After (Spring - constructor injection):**
+    ```java
+    @Controller
+    @RequestMapping("/items")
+    public class ItemController {
+    
+        private final ItemRepository itemRepository;
+        private final UserRepository userRepository;
+    
+        // Constructor injection (recommended)
+        public ItemController(ItemRepository itemRepository,
+                             UserRepository userRepository) {
+            this.itemRepository = itemRepository;
+            this.userRepository = userRepository;
+        }
+    
+        @GetMapping
+        public String list(Model model) {
+            List<Item> items = itemRepository.findAll();
+            // ...
+        }
+    }
     ```
-  ruleID: struts-action-to-springboot-00006
+    
+    **Benefits of constructor injection:**
+    - Immutable dependencies (`final` fields)
+    - Clear required dependencies
+    - Easier unit testing (mock injection)
+    - Fail-fast if dependency missing
+    
+    **Note:** `@Autowired` on constructor is optional for single-constructor classes.
+  ruleID: struts-action-00008
   when:
-    java.referenced:
-      location: IMPORT
-      pattern: org.apache.struts.action.ActionMessage
+    builtin.filecontent:
+      filePattern: ".*Action\\.java"
+      pattern: "new\\s+\\w+DAO\\s*\\(\\s*\\)"
+
 

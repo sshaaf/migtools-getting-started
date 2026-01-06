@@ -15,18 +15,32 @@
   message: |
     Legacy JDBC DAO classes should be replaced with Spring Data JPA repositories.
     
+    **IMPORTANT: File Rename Required**
+    
+    After converting a DAO class to a Repository interface, the file MUST be renamed:
+    - `AccountDAO.java` → `AccountRepository.java`
+    - `CustomerDAO.java` → `CustomerRepository.java`
+    - `OrderDAO.java` → `OrderRepository.java`
+    
     **Before (JDBC DAO):**
     ```java
+    package com.example.dao;
+    
+    import java.sql.*;
+    import java.util.*;
+    
     public class AccountDAO {
+    
         public List<Account> findAll() throws SQLException {
-            List<Account> accounts = new ArrayList<>();
             Connection conn = null;
-            Statement stmt = null;
+            PreparedStatement stmt = null;
             ResultSet rs = null;
+            List<Account> accounts = new ArrayList<>();
+    
             try {
                 conn = DatabaseConnection.getConnection();
-                stmt = conn.createStatement();
-                rs = stmt.executeQuery("SELECT * FROM accounts ORDER BY id");
+                stmt = conn.prepareStatement("SELECT * FROM accounts ORDER BY id");
+                rs = stmt.executeQuery();
                 while (rs.next()) {
                     accounts.add(mapResultSetToAccount(rs));
                 }
@@ -35,73 +49,56 @@
             }
             return accounts;
         }
-        
+    
         public Account findById(Long id) throws SQLException {
-            // More boilerplate JDBC code...
+            // JDBC boilerplate...
         }
-        
-        public Account create(Account account) throws SQLException {
+    
+        public void create(Account account) throws SQLException {
             // INSERT with PreparedStatement...
+        }
+    
+        public void update(Account account) throws SQLException {
+            // UPDATE with PreparedStatement...
+        }
+    
+        public void delete(Long id) throws SQLException {
+            // DELETE or soft delete...
         }
     }
     ```
     
     **After (Spring Data JPA Repository):**
     ```java
+    package com.example.repository;
+    
+    import com.example.entity.Account;
     import org.springframework.data.jpa.repository.JpaRepository;
     import org.springframework.stereotype.Repository;
     
+    import java.util.Optional;
+    
     @Repository
     public interface AccountRepository extends JpaRepository<Account, Long> {
-        
-        // findAll(), findById(), save(), delete() - inherited from JpaRepository
-        
-        // Custom queries - method name derived queries
-        List<Account> findByAccountType(AccountType type);
-        
+    
+        // findAll(), findById(), save(), deleteById() - inherited from JpaRepository
+    
+        // Derived query methods
         Optional<Account> findByAccountNumber(String accountNumber);
-        
+    
+        List<Account> findByActiveTrue();
+    
         List<Account> findByHolderNameContainingIgnoreCase(String name);
-        
-        // Custom JPQL query
-        @Query("SELECT a FROM Account a WHERE a.balance > :minBalance")
-        List<Account> findAccountsWithBalanceAbove(@Param("minBalance") BigDecimal minBalance);
     }
     ```
     
-    **Entity class:**
-    ```java
-    import jakarta.persistence.*;
-    
-    @Entity
-    @Table(name = "accounts")
-    public class Account {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-        
-        @Column(name = "account_number", unique = true, nullable = false)
-        private String accountNumber;
-        
-        @Column(name = "holder_name", nullable = false)
-        private String holderName;
-        
-        @Enumerated(EnumType.STRING)
-        private AccountType accountType;
-        
-        private BigDecimal balance;
-        
-        // getters/setters
-    }
-    ```
-    
-    Spring Data JPA provides:
-    - No boilerplate code required
+    **Key Benefits:**
+    - No boilerplate JDBC code
     - Automatic CRUD operations
-    - Query derivation from method names
+    - Type-safe queries
+    - Built-in pagination and sorting
     - Transaction management
-    - Connection pooling (HikariCP)
-  ruleID: struts-dao-to-springboot-00001
+  ruleID: struts-dao-to-repository-00001
   when:
     or:
       - java.referenced:
@@ -116,7 +113,109 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace manual connection management with Spring-managed DataSource
+  description: Convert model classes to JPA Entities
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: JPA Entity Mapping
+      url: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.entity-persistence
+  message: |
+    Plain Java model classes must be converted to JPA entities with proper annotations.
+    
+    **Derive mapping from DAO's mapResultSet method or CREATE TABLE:**
+    
+    ```java
+    // Look for this pattern in DAO
+    private Account mapResultSetToAccount(ResultSet rs) throws SQLException {
+        Account account = new Account();
+        account.setId(rs.getLong("id"));
+        account.setAccountNumber(rs.getString("account_number"));
+        account.setHolderName(rs.getString("holder_name"));
+        account.setBalance(rs.getBigDecimal("balance"));
+        account.setCreatedDate(rs.getTimestamp("created_date"));
+        account.setActive(rs.getBoolean("active"));
+        return account;
+    }
+    ```
+    
+    **Before (Plain POJO):**
+    ```java
+    package com.example.model;
+    
+    public class Account {
+        private Long id;
+        private String accountNumber;
+        private String holderName;
+        private BigDecimal balance;
+        private Date createdDate;
+        private boolean active;
+        // getters/setters
+    }
+    ```
+    
+    **After (JPA Entity):**
+    ```java
+    package com.example.entity;
+    
+    import jakarta.persistence.*;
+    import java.math.BigDecimal;
+    import java.time.LocalDateTime;
+    
+    @Entity
+    @Table(name = "accounts")
+    public class Account {
+    
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+    
+        @Column(name = "account_number", unique = true, length = 20)
+        private String accountNumber;
+    
+        @Column(name = "holder_name", length = 100)
+        private String holderName;
+    
+        @Column(precision = 15, scale = 2)
+        private BigDecimal balance = BigDecimal.ZERO;
+    
+        @Column(name = "created_date", updatable = false)
+        private LocalDateTime createdDate;
+    
+        @Column(columnDefinition = "BOOLEAN DEFAULT TRUE")
+        private Boolean active = true;
+    
+        @PrePersist
+        protected void onCreate() {
+            if (createdDate == null) {
+                createdDate = LocalDateTime.now();
+            }
+        }
+    
+        // Getters and setters
+    }
+    ```
+    
+    **JPA Annotation Reference:**
+    
+    | SQL Type | Java Type | Annotation |
+    |----------|-----------|------------|
+    | `BIGINT AUTO_INCREMENT` | `Long` | `@Id @GeneratedValue` |
+    | `VARCHAR(n)` | `String` | `@Column(length = n)` |
+    | `DECIMAL(p,s)` | `BigDecimal` | `@Column(precision = p, scale = s)` |
+    | `BOOLEAN` | `Boolean` | `@Column` |
+    | `TIMESTAMP` | `LocalDateTime` | `@Column` |
+    | `UNIQUE` | - | `@Column(unique = true)` |
+  ruleID: struts-dao-to-repository-00002
+  when:
+    java.referenced:
+      location: METHOD_CALL
+      pattern: java.sql.ResultSet.get*
+
+- category: mandatory
+  customVariables: []
+  description: Replace DriverManager.getConnection with Spring DataSource
   effort: 3
   labels:
     - konveyor.io/source=struts
@@ -125,55 +224,62 @@
     - title: Spring Boot DataSource Configuration
       url: https://docs.spring.io/spring-boot/docs/current/reference/html/data.html#data.sql.datasource
   message: |
-    Manual database connection management should be replaced with Spring Boot auto-configured DataSource.
+    Manual database connection management should be replaced with Spring Boot's
+    auto-configured DataSource.
     
-    **Before (Manual connection):**
+    **Before (Manual Connection):**
     ```java
     public class DatabaseConnection {
-        private static final String DB_URL = "jdbc:h2:mem:bankdb";
-        private static final String DB_USER = "sa";
-        private static final String DB_PASSWORD = "";
-        
+        private static final String URL = "jdbc:h2:mem:mydb";
+        private static final String USER = "sa";
+        private static final String PASSWORD = "";
+    
         static {
-            Class.forName("org.h2.Driver");
+            try {
+                Class.forName("org.h2.Driver");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
-        
+    
         public static Connection getConnection() throws SQLException {
-            return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            return DriverManager.getConnection(URL, USER, PASSWORD);
         }
     }
     ```
     
-    **After (Spring Boot application.properties):**
-    ```properties
-    # H2 Database
-    spring.datasource.url=jdbc:h2:mem:bankdb
-    spring.datasource.username=sa
-    spring.datasource.password=
-    spring.datasource.driver-class-name=org.h2.Driver
+    **After (Spring Boot application.yml):**
+    ```yaml
+    spring:
+      datasource:
+        url: jdbc:h2:mem:mydb
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
     
-    # JPA/Hibernate
-    spring.jpa.hibernate.ddl-auto=create-drop
-    spring.jpa.show-sql=true
-    spring.jpa.properties.hibernate.format_sql=true
+      jpa:
+        hibernate:
+          ddl-auto: update
+        show-sql: true
     
-    # H2 Console (for development)
-    spring.h2.console.enabled=true
-    spring.h2.console.path=/h2-console
+      h2:
+        console:
+          enabled: true
+          path: /h2-console
     ```
     
-    **Delete DatabaseConnection.java** - Spring Boot handles:
+    **DELETE DatabaseConnection.java** - Spring Boot handles:
     - Driver loading
     - Connection pooling (HikariCP)
     - Transaction management
     - Connection lifecycle
     
-    If you need direct JDBC access, inject `JdbcTemplate`:
+    **If you need direct JDBC access:**
     ```java
     @Autowired
     private JdbcTemplate jdbcTemplate;
     ```
-  ruleID: struts-dao-to-springboot-00002
+  ruleID: struts-dao-to-repository-00003
   when:
     java.referenced:
       location: METHOD_CALL
@@ -181,7 +287,7 @@
 
 - category: mandatory
   customVariables: []
-  description: Replace manual transaction handling with Spring @Transactional
+  description: Replace manual transactions with Spring @Transactional
   effort: 2
   labels:
     - konveyor.io/source=struts
@@ -190,30 +296,30 @@
     - title: Spring Transaction Management
       url: https://docs.spring.io/spring-framework/docs/current/reference/html/data-access.html#transaction
   message: |
-    Manual transaction handling should be replaced with Spring's declarative `@Transactional` annotation.
+    Manual transaction handling should be replaced with Spring's declarative `@Transactional`.
     
-    **Before (Manual transactions):**
+    **Before (Manual Transactions):**
     ```java
     public void transferFunds(Long fromId, Long toId, BigDecimal amount) throws SQLException {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
-            
+    
             // Withdraw
             PreparedStatement ps1 = conn.prepareStatement(
                 "UPDATE accounts SET balance = balance - ? WHERE id = ?");
             ps1.setBigDecimal(1, amount);
             ps1.setLong(2, fromId);
             ps1.executeUpdate();
-            
+    
             // Deposit
             PreparedStatement ps2 = conn.prepareStatement(
                 "UPDATE accounts SET balance = balance + ? WHERE id = ?");
             ps2.setBigDecimal(1, amount);
             ps2.setLong(2, toId);
             ps2.executeUpdate();
-            
+    
             conn.commit();
         } catch (SQLException e) {
             if (conn != null) conn.rollback();
@@ -226,42 +332,41 @@
     
     **After (Spring @Transactional):**
     ```java
-    import org.springframework.stereotype.Service;
-    import org.springframework.transaction.annotation.Transactional;
-    
     @Service
     public class AccountService {
-        
+    
         private final AccountRepository accountRepository;
-        
+    
         public AccountService(AccountRepository accountRepository) {
             this.accountRepository = accountRepository;
         }
-        
+    
         @Transactional
         public void transferFunds(Long fromId, Long toId, BigDecimal amount) {
             Account from = accountRepository.findById(fromId)
-                .orElseThrow(() -> new AccountNotFoundException(fromId));
+                .orElseThrow(() -> new RuntimeException("Source account not found"));
             Account to = accountRepository.findById(toId)
-                .orElseThrow(() -> new AccountNotFoundException(toId));
-            
-            from.withdraw(amount);
-            to.deposit(amount);
-            
+                .orElseThrow(() -> new RuntimeException("Destination account not found"));
+    
+            if (from.getBalance().compareTo(amount) < 0) {
+                throw new RuntimeException("Insufficient funds");
+            }
+    
+            from.setBalance(from.getBalance().subtract(amount));
+            to.setBalance(to.getBalance().add(amount));
+    
             accountRepository.save(from);
             accountRepository.save(to);
-            // Transaction commits automatically on success
-            // Rolls back automatically on RuntimeException
+            // Automatic commit on success, rollback on exception
         }
     }
     ```
     
-    Benefits of `@Transactional`:
-    - Declarative transaction boundaries
+    **@Transactional behavior:**
     - Automatic commit on success
     - Automatic rollback on RuntimeException
     - Configurable isolation and propagation
-  ruleID: struts-dao-to-springboot-00003
+  ruleID: struts-dao-to-repository-00004
   when:
     java.referenced:
       location: METHOD_CALL
@@ -269,95 +374,215 @@
 
 - category: mandatory
   customVariables: []
-  description: Convert Account model to JPA Entity
+  description: Update code that uses DAO to use Repository
   effort: 3
   labels:
     - konveyor.io/source=struts
     - konveyor.io/target=springboot
   links:
-    - title: JPA Entity Mapping
-      url: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.entity-persistence
+    - title: Spring Data JPA Query Methods
+      url: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods
   message: |
-    Plain Java model classes should be converted to JPA entities with proper annotations.
+    Update all code that uses DAO classes to use the new Repository interfaces.
     
-    **Before (Plain Java model):**
+    **Import Changes:**
     ```java
-    public class Account implements Serializable {
-        private Long id;
-        private String accountNumber;
-        private String holderName;
-        private String accountType;
-        private BigDecimal balance;
-        private Date createdDate;
-        private boolean active;
-        
-        // Getters and setters
+    // Before
+    import com.example.dao.AccountDAO;
+    
+    // After
+    import com.example.repository.AccountRepository;
+    ```
+    
+    **Field/Constructor Changes:**
+    ```java
+    // Before
+    private AccountDAO accountDAO = new AccountDAO();
+    
+    // After
+    private final AccountRepository accountRepository;
+    
+    public AccountController(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
     }
     ```
     
-    **After (JPA Entity):**
+    **Method Call Changes:**
+    
+    | DAO Method | Repository Method | Notes |
+    |------------|------------------|-------|
+    | `dao.findAll()` | `repository.findAll()` | Same |
+    | `dao.findById(id)` | `repository.findById(id).orElse(null)` | Returns Optional |
+    | `dao.create(entity)` | `repository.save(entity)` | Same method for create/update |
+    | `dao.update(entity)` | `repository.save(entity)` | Same method for create/update |
+    | `dao.delete(id)` | `repository.deleteById(id)` | Or custom soft delete |
+    
+    **Handle Optional return:**
     ```java
-    import jakarta.persistence.*;
-    import java.math.BigDecimal;
-    import java.time.LocalDateTime;
-    
-    @Entity
-    @Table(name = "accounts")
-    public class Account {
-        
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-        
-        @Column(name = "account_number", unique = true, nullable = false, length = 20)
-        private String accountNumber;
-        
-        @Column(name = "holder_name", nullable = false, length = 100)
-        private String holderName;
-        
-        @Enumerated(EnumType.STRING)
-        @Column(name = "account_type", nullable = false)
-        private AccountType accountType;
-        
-        @Column(precision = 15, scale = 2)
-        private BigDecimal balance = BigDecimal.ZERO;
-        
-        @Column(length = 100)
-        private String email;
-        
-        @Column(length = 20)
-        private String phone;
-        
-        @Column(name = "created_date")
-        private LocalDateTime createdDate;
-        
-        private boolean active = true;
-        
-        @PrePersist
-        protected void onCreate() {
-            createdDate = LocalDateTime.now();
-        }
-        
-        // Getters and setters
+    // Before
+    Account account = accountDAO.findById(id);
+    if (account == null) {
+        throw new RuntimeException("Not found");
     }
     
-    // Enum for account type
-    public enum AccountType {
-        SAVINGS, CHECKING, BUSINESS
-    }
+    // After
+    Account account = accountRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Not found"));
+    
+    // Or preserve null behavior
+    Account account = accountRepository.findById(id).orElse(null);
     ```
-    
-    Key JPA annotations:
-    - `@Entity` - Marks class as JPA entity
-    - `@Table` - Specifies table name
-    - `@Id` - Primary key
-    - `@GeneratedValue` - Auto-generation strategy
-    - `@Column` - Column mapping and constraints
-    - `@Enumerated` - Enum storage strategy
-    - `@PrePersist` - Lifecycle callback
-  ruleID: struts-dao-to-springboot-00004
+  ruleID: struts-dao-to-repository-00005
   when:
-    java.referenced:
-      location: METHOD_CALL
-      pattern: java.sql.ResultSet.get*
+    builtin.filecontent:
+      filePattern: ".*\\.java"
+      pattern: "\\w+DAO"
+
+- category: mandatory
+  customVariables: []
+  description: Create custom repository methods for complex queries
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Data JPA Custom Queries
+      url: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#jpa.query-methods.query-creation
+  message: |
+    Convert complex DAO queries to Spring Data JPA derived queries or @Query methods.
+    
+    **Derived Query Method Naming:**
+    
+    | SQL Pattern | Repository Method Name |
+    |-------------|----------------------|
+    | `WHERE field = ?` | `findByField(Type field)` |
+    | `WHERE f1 = ? AND f2 = ?` | `findByF1AndF2(Type1 f1, Type2 f2)` |
+    | `WHERE field LIKE '%x%'` | `findByFieldContaining(String x)` |
+    | `WHERE field > ?` | `findByFieldGreaterThan(Type field)` |
+    | `WHERE active = TRUE` | `findByActiveTrue()` |
+    | `ORDER BY field ASC` | `findAllByOrderByFieldAsc()` |
+    
+    **Before (DAO with SQL):**
+    ```java
+    public List<Account> findByType(String type) throws SQLException {
+        String sql = "SELECT * FROM accounts WHERE account_type = ? AND active = TRUE";
+        // JDBC code...
+    }
+    
+    public List<Account> findHighBalanceAccounts(BigDecimal min) throws SQLException {
+        String sql = "SELECT * FROM accounts WHERE balance > ? ORDER BY balance DESC";
+        // JDBC code...
+    }
+    ```
+    
+    **After (Repository):**
+    ```java
+    @Repository
+    public interface AccountRepository extends JpaRepository<Account, Long> {
+    
+        // Derived query - Spring generates SQL automatically
+        List<Account> findByAccountTypeAndActiveTrue(String accountType);
+    
+        // Custom JPQL query
+        @Query("SELECT a FROM Account a WHERE a.balance > :min ORDER BY a.balance DESC")
+        List<Account> findHighBalanceAccounts(@Param("min") BigDecimal min);
+    
+        // Modifying query (UPDATE/DELETE)
+        @Modifying
+        @Query("UPDATE Account a SET a.active = false WHERE a.id = :id")
+        void softDelete(@Param("id") Long id);
+    }
+    ```
+    
+    **Note:** `@Modifying` queries must be used within `@Transactional` context.
+  ruleID: struts-dao-to-repository-00006
+  when:
+    builtin.filecontent:
+      filePattern: ".*DAO\\.java"
+      pattern: "executeQuery|executeUpdate"
+
+- category: mandatory
+  customVariables: []
+  description: Create Service layer for business logic
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Service Layer
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-stereotype-annotations
+  message: |
+    Move business logic from DAO to a Service layer. Repositories should only contain data access.
+    
+    **Before (Business logic in DAO):**
+    ```java
+    public class AccountDAO {
+        public boolean withdraw(Long id, BigDecimal amount) throws SQLException {
+            Account account = findById(id);
+            if (account == null || account.getBalance().compareTo(amount) < 0) {
+                return false;  // Business rule: insufficient funds
+            }
+            String sql = "UPDATE accounts SET balance = balance - ? WHERE id = ?";
+            // execute...
+            return true;
+        }
+    }
+    ```
+    
+    **After (Service with Repository):**
+    ```java
+    @Service
+    @Transactional
+    public class AccountService {
+    
+        private final AccountRepository accountRepository;
+    
+        public AccountService(AccountRepository accountRepository) {
+            this.accountRepository = accountRepository;
+        }
+    
+        public void withdraw(Long id, BigDecimal amount) {
+            // Business validation
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Amount must be positive");
+            }
+    
+            // Data access
+            Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+    
+            // Business rule
+            if (account.getBalance().compareTo(amount) < 0) {
+                throw new RuntimeException("Insufficient funds");
+            }
+    
+            // Update
+            account.setBalance(account.getBalance().subtract(amount));
+            accountRepository.save(account);
+        }
+    
+        @Transactional(readOnly = true)
+        public List<Account> getAllActiveAccounts() {
+            return accountRepository.findByActiveTrue();
+        }
+    }
+    ```
+    
+    **Service Layer Responsibilities:**
+    - Business logic and validation
+    - Transaction boundaries (`@Transactional`)
+    - Coordinate multiple repositories
+    - Map between entities and DTOs
+    - Throw business exceptions
+    
+    **Repository Layer Responsibilities:**
+    - Data access only
+    - No business logic
+    - Simple interface definitions
+  ruleID: struts-dao-to-repository-00007
+  when:
+    builtin.filecontent:
+      filePattern: ".*DAO\\.java"
+      pattern: "if\\s*\\([^)]+\\.compareTo|throw\\s+new"
+
 

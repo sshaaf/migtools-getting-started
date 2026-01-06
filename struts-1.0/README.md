@@ -203,25 +203,6 @@ rules/struts-to-springboot/
 └── README.md                                      # Migration guide
 ```
 
-### Run Migration Analysis
-
-```bash
-kantra analyze \
-  --input ./struts-bank-demo \
-  --output ./analysis-output \
-  --rules ./struts-bank-demo/rules/struts-to-springboot/ \
-  --target springboot
-```
-
-## Migration Opportunities
-
-This application is ideal for demonstrating migrations to:
-
-- **Spring Boot** - Using the included Kantra rules
-- **Spring MVC** - Replace Struts actions with @Controller classes
-- **Jakarta EE / JAX-RS** - RESTful API approach
-- **Quarkus** - Cloud-native modernization
-- **Modern Frontend** - Replace JSPs with React/Angular/Vue
 
 ## Why This Demo?
 
@@ -232,7 +213,4 @@ Struts 1.x reached end-of-life and has known security vulnerabilities. Many ente
 3. A migration target for demonstrating tools like Konveyor
 4. Educational value for understanding legacy Java EE patterns
 
-## License
-
-Apache License 2.0
 
