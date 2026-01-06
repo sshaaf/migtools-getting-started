@@ -1,0 +1,372 @@
+# Rules for migrating Struts JSP tag libraries to Thymeleaf templates
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts HTML taglib with Thymeleaf attributes
+  effort: 5
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Thymeleaf Tutorial
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html
+    - title: Thymeleaf Spring Integration
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/thymeleafspring.html
+  message: |
+    Struts HTML taglib must be replaced with Thymeleaf template syntax.
+    
+    **Before (Struts JSP):**
+    ```jsp
+    <%@ taglib uri="http://struts.apache.org/tags-html" prefix="html" %>
+    
+    <html:form action="/saveAccount" method="post">
+        <html:hidden property="id"/>
+        
+        <html:text property="holderName" maxlength="100"/>
+        <html:errors property="holderName"/>
+        
+        <html:select property="accountType">
+            <html:option value="SAVINGS">Savings</html:option>
+            <html:option value="CHECKING">Checking</html:option>
+        </html:select>
+        
+        <html:submit>Save</html:submit>
+        <html:link action="/listAccounts">Cancel</html:link>
+    </html:form>
+    ```
+    
+    **After (Thymeleaf):**
+    ```html
+    <form th:action="@{/accounts}" th:object="${accountDTO}" method="post">
+        <input type="hidden" th:field="*{id}"/>
+        
+        <input type="text" th:field="*{holderName}" maxlength="100"/>
+        <span th:if="${#fields.hasErrors('holderName')}" th:errors="*{holderName}" class="error"></span>
+        
+        <select th:field="*{accountType}">
+            <option value="SAVINGS">Savings</option>
+            <option value="CHECKING">Checking</option>
+        </select>
+        
+        <button type="submit">Save</button>
+        <a th:href="@{/accounts}">Cancel</a>
+    </form>
+    ```
+    
+    Key Thymeleaf syntax:
+    - `th:action="@{/path}"` - URL expression
+    - `th:object="${object}"` - Form backing object
+    - `th:field="*{property}"` - Form field binding
+    - `th:errors="*{property}"` - Validation error display
+    - `th:href="@{/path}"` - Link URL
+  ruleID: struts-jsp-to-thymeleaf-00001
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "http://struts.apache.org/tags-html"
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts Bean taglib with Thymeleaf expressions
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Thymeleaf Standard Expression Syntax
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html#standard-expression-syntax
+  message: |
+    Struts Bean taglib must be replaced with Thymeleaf expression syntax.
+    
+    **Before (Struts JSP):**
+    ```jsp
+    <%@ taglib uri="http://struts.apache.org/tags-bean" prefix="bean" %>
+    
+    <bean:write name="account" property="holderName"/>
+    <bean:write name="account" property="balance" format="#,##0.00"/>
+    <bean:message key="app.title"/>
+    ```
+    
+    **After (Thymeleaf):**
+    ```html
+    <span th:text="${account.holderName}">John Doe</span>
+    <span th:text="${#numbers.formatDecimal(account.balance, 1, 2)}">0.00</span>
+    <span th:text="#{app.title}">Application Title</span>
+    ```
+    
+    Thymeleaf expressions:
+    - `${...}` - Variable expressions (OGNL/SpEL)
+    - `*{...}` - Selection expressions (relative to th:object)
+    - `#{...}` - Message expressions (i18n)
+    - `@{...}` - URL expressions
+    - `~{...}` - Fragment expressions
+    
+    Utility objects:
+    - `#numbers` - Number formatting
+    - `#dates` - Date formatting
+    - `#strings` - String operations
+    - `#lists` - List operations
+  ruleID: struts-jsp-to-thymeleaf-00002
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "http://struts.apache.org/tags-bean"
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts Logic taglib with Thymeleaf conditionals and iteration
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Thymeleaf Iteration
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html#iteration
+    - title: Thymeleaf Conditionals
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html#conditional-evaluation
+  message: |
+    Struts Logic taglib must be replaced with Thymeleaf conditional and iteration syntax.
+    
+    **Before (Struts JSP):**
+    ```jsp
+    <%@ taglib uri="http://struts.apache.org/tags-logic" prefix="logic" %>
+    
+    <logic:notEmpty name="accounts">
+        <logic:iterate id="account" name="accounts">
+            <tr>
+                <td><bean:write name="account" property="holderName"/></td>
+                <td><bean:write name="account" property="balance"/></td>
+            </tr>
+        </logic:iterate>
+    </logic:notEmpty>
+    
+    <logic:empty name="accounts">
+        <p>No accounts found.</p>
+    </logic:empty>
+    
+    <logic:equal name="account" property="accountType" value="SAVINGS">
+        <span class="badge-savings">Savings</span>
+    </logic:equal>
+    ```
+    
+    **After (Thymeleaf):**
+    ```html
+    <table th:if="${not #lists.isEmpty(accounts)}">
+        <tr th:each="account : ${accounts}">
+            <td th:text="${account.holderName}">Name</td>
+            <td th:text="${account.balance}">0.00</td>
+        </tr>
+    </table>
+    
+    <p th:if="${#lists.isEmpty(accounts)}">No accounts found.</p>
+    
+    <span th:if="${account.accountType == 'SAVINGS'}" class="badge-savings">Savings</span>
+    
+    <!-- Or use switch/case -->
+    <div th:switch="${account.accountType}">
+        <span th:case="'SAVINGS'" class="badge-savings">Savings</span>
+        <span th:case="'CHECKING'" class="badge-checking">Checking</span>
+        <span th:case="*" class="badge-default">Other</span>
+    </div>
+    ```
+    
+    Thymeleaf equivalents:
+    - `<logic:iterate>` → `th:each`
+    - `<logic:empty>` → `th:if="${#lists.isEmpty(list)}"`
+    - `<logic:notEmpty>` → `th:if="${not #lists.isEmpty(list)}"`
+    - `<logic:equal>` → `th:if="${value == 'expected'}"`
+    - `<logic:notEqual>` → `th:if="${value != 'expected'}"`
+  ruleID: struts-jsp-to-thymeleaf-00003
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "http://struts.apache.org/tags-logic"
+
+- category: mandatory
+  customVariables: []
+  description: Replace html:link with Thymeleaf th:href
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Thymeleaf URL Expressions
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html#link-urls
+  message: |
+    Struts `<html:link>` must be replaced with standard `<a>` tags and Thymeleaf URL expressions.
+    
+    **Before (Struts):**
+    ```jsp
+    <html:link action="/viewAccount" paramId="id" paramName="account" paramProperty="id">
+        View
+    </html:link>
+    
+    <html:link action="/editAccount">
+        New Account
+    </html:link>
+    
+    <html:link action="/deleteAccount" paramId="id" paramName="account" paramProperty="id"
+               onclick="return confirm('Delete?');">
+        Delete
+    </html:link>
+    ```
+    
+    **After (Thymeleaf):**
+    ```html
+    <a th:href="@{/accounts/{id}(id=${account.id})}">View</a>
+    
+    <a th:href="@{/accounts/new}">New Account</a>
+    
+    <a th:href="@{/accounts/{id}/delete(id=${account.id})}"
+       onclick="return confirm('Delete?');">Delete</a>
+    
+    <!-- Multiple parameters -->
+    <a th:href="@{/accounts(page=${page}, size=${size})}">Next Page</a>
+    
+    <!-- Path variable syntax -->
+    <a th:href="@{/accounts/{id}/edit(id=${account.id})}">Edit</a>
+    ```
+    
+    URL expression syntax:
+    - `@{/path}` - Context-relative URL
+    - `@{/path/{var}(var=${value})}` - Path variable
+    - `@{/path(param=${value})}` - Query parameter
+    - `@{~/other-context/path}` - Server-relative URL
+  ruleID: struts-jsp-to-thymeleaf-00004
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "<html:link"
+
+- category: mandatory
+  customVariables: []
+  description: Replace html:messages with Thymeleaf flash attributes
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Flash Attributes
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-flash-attributes
+  message: |
+    Struts `<html:messages>` for displaying success/error messages must be replaced with Thymeleaf conditionals.
+    
+    **Before (Struts JSP):**
+    ```jsp
+    <html:messages id="message" message="true">
+        <div class="message-success">
+            <bean:write name="message"/>
+        </div>
+    </html:messages>
+    
+    <html:errors/>
+    ```
+    
+    **After (Thymeleaf):**
+    ```html
+    <!-- Success messages (flash attributes) -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <span th:text="${successMessage}">Success message</span>
+    </div>
+    
+    <!-- Error messages -->
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <span th:text="${errorMessage}">Error message</span>
+    </div>
+    
+    <!-- Validation errors -->
+    <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">
+        <ul>
+            <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Error</li>
+        </ul>
+    </div>
+    
+    <!-- Global errors -->
+    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
+        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Error</span>
+    </div>
+    ```
+    
+    **Controller setup:**
+    ```java
+    @PostMapping("/accounts")
+    public String save(@Valid AccountDTO account, BindingResult result,
+                       RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            return "edit";
+        }
+        accountService.save(account);
+        redirectAttributes.addFlashAttribute("successMessage", "Account saved!");
+        return "redirect:/accounts";
+    }
+    ```
+  ruleID: struts-jsp-to-thymeleaf-00005
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "<html:messages|<html:errors"
+
+- category: mandatory
+  customVariables: []
+  description: Convert JSP files to Thymeleaf HTML templates
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Thymeleaf
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.template-engines
+  message: |
+    JSP files should be converted to Thymeleaf HTML templates.
+    
+    **File location change:**
+    - Before: `src/main/webapp/*.jsp`
+    - After: `src/main/resources/templates/*.html`
+    
+    **Before (list.jsp):**
+    ```jsp
+    <%@ page language="java" contentType="text/html; charset=UTF-8"%>
+    <%@ taglib uri="http://struts.apache.org/tags-html" prefix="html" %>
+    <%@ taglib uri="http://struts.apache.org/tags-bean" prefix="bean" %>
+    <%@ taglib uri="http://struts.apache.org/tags-logic" prefix="logic" %>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title><bean:message key="app.title"/></title>
+    </head>
+    <body>
+        <h1>Accounts</h1>
+        <logic:iterate id="account" name="accounts">
+            <p><bean:write name="account" property="holderName"/></p>
+        </logic:iterate>
+    </body>
+    </html>
+    ```
+    
+    **After (list.html):**
+    ```html
+    <!DOCTYPE html>
+    <html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title th:text="#{app.title}">Bank App</title>
+    </head>
+    <body>
+        <h1>Accounts</h1>
+        <p th:each="account : ${accounts}" th:text="${account.holderName}">Name</p>
+    </body>
+    </html>
+    ```
+    
+    Key differences:
+    - File extension: `.html` instead of `.jsp`
+    - Location: `resources/templates/` instead of `webapp/`
+    - Add `xmlns:th="http://www.thymeleaf.org"` namespace
+    - Replace taglib directives with Thymeleaf attributes
+    - Natural templates (valid HTML even without processing)
+  ruleID: struts-jsp-to-thymeleaf-00006
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.jsp"
+      pattern: "<%@ page"
+
