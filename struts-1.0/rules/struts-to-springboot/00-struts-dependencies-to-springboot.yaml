@@ -1,0 +1,272 @@
+# Rules for migrating Struts 1.x Maven dependencies to Spring Boot 3.x
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts Core dependency with Spring Boot Web Starter
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Web Starter Documentation
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/web.html
+    - title: Struts to Spring Migration Guide
+      url: https://spring.io/guides
+  message: |
+    The `struts-core` dependency must be replaced with Spring Boot Web Starter.
+    
+    **Remove the Struts dependency:**
+    ```xml
+    <!-- Remove this -->
+    <dependency>
+        <groupId>org.apache.struts</groupId>
+        <artifactId>struts-core</artifactId>
+        <version>${struts.version}</version>
+    </dependency>
+    ```
+    
+    **Add Spring Boot Web Starter:**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    ```
+    
+    Spring Boot Web Starter provides:
+    - Embedded Tomcat server (no external container needed)
+    - Spring MVC for web controllers
+    - RESTful web services support
+    - Auto-configuration for web applications
+  ruleID: struts-dependencies-to-springboot-00001
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.apache.struts.struts-core
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts Taglib with Spring Boot Thymeleaf Starter
+  effort: 5
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Thymeleaf Documentation
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.template-engines
+    - title: Thymeleaf Tutorial
+      url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html
+  message: |
+    The `struts-taglib` dependency should be replaced with Thymeleaf for modern template rendering.
+    
+    **Remove the Struts taglib:**
+    ```xml
+    <!-- Remove this -->
+    <dependency>
+        <groupId>org.apache.struts</groupId>
+        <artifactId>struts-taglib</artifactId>
+        <version>${struts.version}</version>
+    </dependency>
+    ```
+    
+    **Add Spring Boot Thymeleaf Starter:**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+    ```
+    
+    Thymeleaf provides:
+    - Natural templates (valid HTML)
+    - Spring MVC integration
+    - Expression language for data binding
+    - Form handling and validation display
+    
+    You will also need to migrate JSP files to Thymeleaf templates.
+  ruleID: struts-dependencies-to-springboot-00002
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.apache.struts.struts-taglib
+
+- category: mandatory
+  customVariables: []
+  description: Replace Struts Tiles with Thymeleaf Layout Dialect
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Thymeleaf Layout Dialect
+      url: https://github.com/ultraq/thymeleaf-layout-dialect
+  message: |
+    The `struts-tiles` dependency for layout management should be replaced with Thymeleaf Layout Dialect.
+    
+    **Remove Struts Tiles:**
+    ```xml
+    <!-- Remove this -->
+    <dependency>
+        <groupId>org.apache.struts</groupId>
+        <artifactId>struts-tiles</artifactId>
+        <version>${struts.version}</version>
+    </dependency>
+    ```
+    
+    **Add Thymeleaf Layout Dialect (optional, for layout inheritance):**
+    ```xml
+    <dependency>
+        <groupId>nz.net.ultraq.thymeleaf</groupId>
+        <artifactId>thymeleaf-layout-dialect</artifactId>
+    </dependency>
+    ```
+    
+    Alternative: Use Thymeleaf fragments for reusable components.
+  ruleID: struts-dependencies-to-springboot-00003
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.apache.struts.struts-tiles
+
+- category: mandatory
+  customVariables: []
+  description: Add Spring Boot parent POM for dependency management
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Maven Plugin
+      url: https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/html/
+  message: |
+    When migrating from Struts to Spring Boot, add the Spring Boot parent POM for dependency management.
+    
+    **Add Spring Boot Parent:**
+    ```xml
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/>
+    </parent>
+    ```
+    
+    **Add Spring Boot Maven Plugin:**
+    ```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+    ```
+    
+    **Update Java version to 17+:**
+    ```xml
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+    ```
+    
+    Benefits of Spring Boot parent:
+    - Managed dependency versions
+    - Sensible plugin defaults
+    - Executable JAR packaging
+  ruleID: struts-dependencies-to-springboot-00004
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.apache.struts.struts-core
+
+- category: mandatory
+  customVariables: []
+  description: Replace Commons DBCP with HikariCP (Spring Boot default)
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Data Source Configuration
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/data.html#data.sql.datasource
+  message: |
+    Apache Commons DBCP should be replaced with HikariCP, which is the default connection pool in Spring Boot.
+    
+    **Remove Commons DBCP:**
+    ```xml
+    <!-- Remove this -->
+    <dependency>
+        <groupId>commons-dbcp</groupId>
+        <artifactId>commons-dbcp</artifactId>
+        <version>1.4</version>
+    </dependency>
+    ```
+    
+    **HikariCP is included with Spring Boot Starter JDBC/JPA:**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    ```
+    
+    **Configure in application.properties:**
+    ```properties
+    spring.datasource.url=jdbc:h2:mem:bankdb
+    spring.datasource.username=sa
+    spring.datasource.password=
+    spring.datasource.driver-class-name=org.h2.Driver
+    
+    # HikariCP settings (optional)
+    spring.datasource.hikari.maximum-pool-size=10
+    spring.datasource.hikari.minimum-idle=5
+    ```
+  ruleID: struts-dependencies-to-springboot-00005
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: commons-dbcp.commons-dbcp
+
+- category: optional
+  customVariables: []
+  description: Add Spring Boot Validation Starter for form validation
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Validation
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/io.html#io.validation
+  message: |
+    For form validation (replacing ActionForm.validate()), add Spring Boot Validation Starter.
+    
+    **Add validation dependency:**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    ```
+    
+    This enables Jakarta Bean Validation (JSR-380) with Hibernate Validator.
+    
+    **Example usage:**
+    ```java
+    public class AccountDTO {
+        @NotBlank(message = "Holder name is required")
+        private String holderName;
+        
+        @Email(message = "Invalid email format")
+        private String email;
+        
+        @DecimalMin(value = "0.0", message = "Balance cannot be negative")
+        private BigDecimal balance;
+    }
+    ```
+  ruleID: struts-dependencies-to-springboot-00006
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.apache.struts.struts-core
+

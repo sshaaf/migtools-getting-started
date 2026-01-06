@@ -1,0 +1,233 @@
+# Rules for migrating Struts ActionForm to Spring DTOs with Bean Validation
+
+- category: mandatory
+  customVariables: []
+  description: Replace ActionForm with Spring DTO/Model class
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Web MVC Form Handling
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-modelattrib-method-args
+    - title: Bean Validation with Spring
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/io.html#io.validation
+  message: |
+    Struts `ActionForm` classes must be converted to plain Java DTOs with Bean Validation annotations.
+    
+    **Before (Struts ActionForm):**
+    ```java
+    import org.apache.struts.action.ActionForm;
+    import org.apache.struts.action.ActionErrors;
+    import org.apache.struts.action.ActionMapping;
+    
+    public class AccountForm extends ActionForm {
+        private String holderName;
+        private String accountType;
+        private String balance;
+        
+        @Override
+        public void reset(ActionMapping mapping, HttpServletRequest request) {
+            this.holderName = null;
+            this.accountType = "SAVINGS";
+            this.balance = "0.00";
+        }
+        
+        @Override
+        public ActionErrors validate(ActionMapping mapping, HttpServletRequest request) {
+            ActionErrors errors = new ActionErrors();
+            if (holderName == null || holderName.trim().isEmpty()) {
+                errors.add("holderName", new ActionMessage("error.holderName.required"));
+            }
+            return errors;
+        }
+        
+        // getters and setters
+    }
+    ```
+    
+    **After (Spring DTO with Bean Validation):**
+    ```java
+    import jakarta.validation.constraints.*;
+    import java.math.BigDecimal;
+    
+    public class AccountDTO {
+        
+        private Long id;
+        
+        private String accountNumber;
+        
+        @NotBlank(message = "Account holder name is required")
+        @Size(max = 100, message = "Name cannot exceed 100 characters")
+        private String holderName;
+        
+        @NotNull(message = "Account type is required")
+        private AccountType accountType;
+        
+        @DecimalMin(value = "0.0", inclusive = true, message = "Balance cannot be negative")
+        private BigDecimal balance = BigDecimal.ZERO;
+        
+        @Email(message = "Please provide a valid email address")
+        private String email;
+        
+        @Pattern(regexp = "^\\d{3}-\\d{4}$", message = "Phone must be in format XXX-XXXX")
+        private String phone;
+        
+        // Constructor, getters, setters
+        public AccountDTO() {
+            this.accountType = AccountType.SAVINGS;
+            this.balance = BigDecimal.ZERO;
+        }
+    }
+    ```
+    
+    Key differences:
+    - No base class required (plain POJO)
+    - No `reset()` method - use constructor defaults
+    - No `validate()` method - use Bean Validation annotations
+    - Use proper types (BigDecimal instead of String for balance)
+    - Validation is declarative, not imperative
+  ruleID: struts-actionform-to-springboot-00001
+  when:
+    java.referenced:
+      location: INHERITANCE
+      pattern: org.apache.struts.action.ActionForm
+
+- category: mandatory
+  customVariables: []
+  description: Remove ActionForm reset method - use constructor defaults
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Form Handling
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-modelattrib-method-args
+  message: |
+    The `reset()` method from ActionForm is not needed in Spring. Use constructor defaults instead.
+    
+    **Before (Struts):**
+    ```java
+    @Override
+    public void reset(ActionMapping mapping, HttpServletRequest request) {
+        this.holderName = null;
+        this.accountType = "SAVINGS";
+        this.balance = "0.00";
+    }
+    ```
+    
+    **After (Spring):**
+    ```java
+    public class AccountDTO {
+        private String holderName;
+        private AccountType accountType = AccountType.SAVINGS;  // Default in declaration
+        private BigDecimal balance = BigDecimal.ZERO;           // Default in declaration
+        
+        // Or use constructor
+        public AccountDTO() {
+            this.accountType = AccountType.SAVINGS;
+            this.balance = BigDecimal.ZERO;
+        }
+    }
+    ```
+    
+    In the controller, you can also use `@ModelAttribute` method to provide defaults:
+    ```java
+    @ModelAttribute("accountDTO")
+    public AccountDTO newAccountDTO() {
+        AccountDTO dto = new AccountDTO();
+        dto.setAccountType(AccountType.SAVINGS);
+        return dto;
+    }
+    ```
+  ruleID: struts-actionform-to-springboot-00002
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.apache.struts.action.ActionForm
+
+- category: mandatory
+  customVariables: []
+  description: Replace ActionForm validate method with Bean Validation
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Jakarta Bean Validation
+      url: https://jakarta.ee/specifications/bean-validation/
+    - title: Hibernate Validator
+      url: https://hibernate.org/validator/
+  message: |
+    Replace ActionForm's `validate()` method with Jakarta Bean Validation annotations.
+    
+    **Before (Struts imperative validation):**
+    ```java
+    public ActionErrors validate(ActionMapping mapping, HttpServletRequest request) {
+        ActionErrors errors = new ActionErrors();
+        
+        if (holderName == null || holderName.trim().isEmpty()) {
+            errors.add("holderName", new ActionMessage("error.holderName.required"));
+        }
+        
+        if (email != null && !email.contains("@")) {
+            errors.add("email", new ActionMessage("error.email.invalid"));
+        }
+        
+        try {
+            Double.parseDouble(balance);
+        } catch (NumberFormatException e) {
+            errors.add("balance", new ActionMessage("error.balance.invalid"));
+        }
+        
+        return errors;
+    }
+    ```
+    
+    **After (Spring declarative validation):**
+    ```java
+    import jakarta.validation.constraints.*;
+    
+    public class AccountDTO {
+        
+        @NotBlank(message = "Account holder name is required")
+        private String holderName;
+        
+        @Email(message = "Please provide a valid email address")
+        private String email;
+        
+        @NotNull(message = "Balance is required")
+        @DecimalMin(value = "0.0", message = "Balance must be zero or positive")
+        private BigDecimal balance;
+    }
+    ```
+    
+    **Use in controller:**
+    ```java
+    @PostMapping("/accounts")
+    public String saveAccount(@Valid @ModelAttribute AccountDTO account,
+                              BindingResult result, Model model) {
+        if (result.hasErrors()) {
+            return "edit";
+        }
+        accountService.save(account);
+        return "redirect:/accounts";
+    }
+    ```
+    
+    Common validation annotations:
+    - `@NotNull` - Field must not be null
+    - `@NotBlank` - String must not be null or empty/whitespace
+    - `@NotEmpty` - Collection/String must not be null or empty
+    - `@Size(min=, max=)` - Size constraints
+    - `@Min`, `@Max` - Numeric constraints
+    - `@DecimalMin`, `@DecimalMax` - BigDecimal constraints
+    - `@Email` - Valid email format
+    - `@Pattern(regexp=)` - Regex pattern
+    - `@Past`, `@Future` - Date constraints
+  ruleID: struts-actionform-to-springboot-00003
+  when:
+    java.referenced:
+      location: METHOD
+      pattern: org.apache.struts.action.ActionForm.validate*
+
