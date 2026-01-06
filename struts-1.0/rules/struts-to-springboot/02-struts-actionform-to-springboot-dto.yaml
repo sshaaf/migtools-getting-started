@@ -507,3 +507,132 @@
           filePattern: ".*Action\\.java"
           pattern: "new\\s+BigDecimal\\(.*Form\\."
 
+- category: mandatory
+  customVariables: []
+  description: Handle Form-to-Entity and Entity-to-Form type conversions
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring MVC Data Binding
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-modelattrib-method-args
+  message: |
+    **CRITICAL: Form↔Entity Type Conversion**
+    
+    When Form uses typed fields (Enum, Long, BigDecimal) but Entity uses different types
+    (typically String), you must convert between them correctly.
+    
+    **Common Scenario: Form has Enum, Entity has String**
+    
+    | Direction | Conversion Method |
+    |-----------|-------------------|
+    | Form → Entity | `entity.setType(form.getType().name())` |
+    | Entity → Form | `form.setType(FormEnum.valueOf(entity.getType()))` |
+    
+    **Before (WRONG - Type mismatch):**
+    ```java
+    // WRONG: Form.accountType is Enum, Entity.accountType is String
+    account.setAccountType(accountForm.getAccountType());  // ERROR!
+    
+    // WRONG: Entity.accountType is String, Form.accountType is Enum
+    accountForm.setAccountType(account.getAccountType());  // ERROR!
+    
+    // WRONG: Form.id is Long, not String
+    accountForm.setId(String.valueOf(account.getId()));    // ERROR!
+    
+    // WRONG: Form.balance is BigDecimal, not String
+    accountForm.setBalance(account.getBalance().toString()); // ERROR!
+    
+    // WRONG: Form.accountType is Enum, not String literal
+    accountForm.setAccountType("SAVINGS");                 // ERROR!
+    
+    // WRONG: Form.balance is BigDecimal, not String literal
+    accountForm.setBalance("0.00");                        // ERROR!
+    ```
+    
+    **After (CORRECT - Proper type conversion):**
+    ```java
+    // CORRECT: Form → Entity (Enum to String)
+    account.setAccountType(accountForm.getAccountType().name());
+    
+    // CORRECT: Entity → Form (String to Enum)
+    accountForm.setAccountType(AccountForm.AccountType.valueOf(account.getAccountType()));
+    
+    // CORRECT: Entity → Form (Long stays Long)
+    accountForm.setId(account.getId());
+    
+    // CORRECT: Entity → Form (BigDecimal stays BigDecimal)
+    accountForm.setBalance(account.getBalance());
+    
+    // CORRECT: Setting Enum default
+    accountForm.setAccountType(AccountForm.AccountType.SAVINGS);
+    
+    // CORRECT: Setting BigDecimal default
+    accountForm.setBalance(BigDecimal.ZERO);
+    ```
+    
+    **Type Conversion Reference:**
+    
+    | From | To | Conversion |
+    |------|-----|------------|
+    | `Enum` | `String` | `enumValue.name()` |
+    | `String` | `Enum` | `EnumType.valueOf(stringValue)` |
+    | `Long` | `Long` | Direct assignment |
+    | `BigDecimal` | `BigDecimal` | Direct assignment |
+    | `String` literal | `Enum` | `EnumType.CONSTANT` |
+    | `String` literal | `BigDecimal` | `new BigDecimal("0.00")` or `BigDecimal.ZERO` |
+    
+    **Full Example - EditAccountAction:**
+    ```java
+    @GetMapping("/edit")
+    public String editAccount(@RequestParam(required = false) Long id,
+                              @ModelAttribute AccountForm form, Model model) {
+        if (id != null) {
+            Account account = accountRepository.findById(id).orElse(null);
+            if (account != null) {
+                // Entity → Form conversion
+                form.setId(account.getId());                    // Long → Long
+                form.setAccountNumber(account.getAccountNumber());
+                form.setHolderName(account.getHolderName());
+                form.setAccountType(                            // String → Enum
+                    AccountForm.AccountType.valueOf(account.getAccountType())
+                );
+                form.setBalance(account.getBalance());          // BigDecimal → BigDecimal
+            }
+        } else {
+            // Set defaults with proper types
+            form.setAccountType(AccountForm.AccountType.SAVINGS); // Enum constant
+            form.setBalance(BigDecimal.ZERO);                     // BigDecimal constant
+        }
+        return "edit";
+    }
+    ```
+    
+    **Full Example - SaveAccountAction:**
+    ```java
+    @PostMapping("/save")
+    public String saveAccount(@ModelAttribute AccountForm form) {
+        Account account = new Account();
+        
+        // Form → Entity conversion
+        account.setId(form.getId());                           // Long → Long
+        account.setAccountNumber(form.getAccountNumber());
+        account.setHolderName(form.getHolderName());
+        account.setAccountType(form.getAccountType().name());  // Enum → String
+        account.setBalance(form.getBalance());                 // BigDecimal → BigDecimal
+        
+        accountRepository.save(account);
+        return "redirect:/accounts";
+    }
+    ```
+  ruleID: struts-actionform-00008
+  when:
+    or:
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "\\.set\\w+\\(.*\\.get\\w+\\(\\)\\)"
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "String\\.valueOf\\(.*\\.getId\\(\\)\\)"
+
