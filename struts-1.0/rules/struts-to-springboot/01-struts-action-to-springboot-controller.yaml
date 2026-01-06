@@ -17,10 +17,10 @@
     
     | Aspect | From (Struts) | To (Spring) |
     |--------|---------------|-------------|
-    | Package | `*.action.*` | `*.controller.*` |
+    | Package | Keep original package | Keep original package |
     | Extends | `extends Action` | Remove (no superclass) |
     | Annotations | None | `@Controller` + `@RequestMapping` |
-    | Naming | `*Action` | `*Controller` |
+    | Naming | `*Action` | Keep original name |
     
     **Before (Struts Action):**
     ```java
@@ -518,4 +518,139 @@
       filePattern: ".*Action\\.java"
       pattern: "new\\s+\\w+DAO\\s*\\(\\s*\\)"
 
+- category: mandatory
+  customVariables: []
+  description: Replace DAO business method calls with Service layer
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Service Layer
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-stereotype-annotations
+  message: |
+    **CRITICAL: Business methods from DAO do NOT exist on JPA Repository**
+    
+    When migrating from DAO to Spring Data JPA Repository, only STANDARD CRUD methods
+    are available (findAll, findById, save, delete, etc.). Custom business methods like
+    `deposit()`, `withdraw()`, `transfer()` must be moved to a SERVICE layer.
+    
+    **Methods NOT available on JpaRepository:**
+    - `deposit(Long id, BigDecimal amount)` - Business logic, move to Service
+    - `withdraw(Long id, BigDecimal amount)` - Business logic, move to Service  
+    - `transfer(Long fromId, Long toId, BigDecimal amount)` - Business logic, move to Service
+    - Any method with business rules or validation
+    
+    **Before (Action calling DAO business method):**
+    ```java
+    @Controller
+    public class TransactionAction {
+        
+        private final AccountRepository accountRepository;  // WRONG!
+        
+        @PostMapping("/deposit")
+        public String deposit(TransactionForm form, Model model) {
+            // ERROR: deposit() doesn't exist on JpaRepository!
+            accountRepository.deposit(form.getAccountId(), form.getAmount());
+            return "success";
+        }
+        
+        @PostMapping("/withdraw")  
+        public String withdraw(TransactionForm form, Model model) {
+            // ERROR: withdraw() doesn't exist on JpaRepository!
+            boolean success = accountRepository.withdraw(form.getAccountId(), form.getAmount());
+            if (!success) {
+                model.addAttribute("error", "Insufficient funds");
+                return "error";
+            }
+            return "success";
+        }
+    }
+    ```
+    
+    **After (Action calling Service):**
+    ```java
+    @Controller
+    public class TransactionAction {
+        
+        private final AccountService accountService;  // Use Service, not Repository
+        
+        public TransactionAction(AccountService accountService) {
+            this.accountService = accountService;
+        }
+        
+        @PostMapping("/deposit")
+        public String deposit(TransactionForm form, Model model) {
+            accountService.deposit(form.getAccountId(), form.getAmount());
+            return "success";
+        }
+        
+        @PostMapping("/withdraw")
+        public String withdraw(TransactionForm form, Model model) {
+            try {
+                accountService.withdraw(form.getAccountId(), form.getAmount());
+                return "success";
+            } catch (InsufficientFundsException e) {
+                model.addAttribute("error", e.getMessage());
+                return "error";
+            }
+        }
+    }
+    ```
+    
+    **Create corresponding Service class:**
+    ```java
+    @Service
+    @Transactional
+    public class AccountService {
+        
+        private final AccountRepository accountRepository;
+        
+        public AccountService(AccountRepository accountRepository) {
+            this.accountRepository = accountRepository;
+        }
+        
+        public void deposit(Long accountId, BigDecimal amount) {
+            Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+            account.setBalance(account.getBalance().add(amount));
+            accountRepository.save(account);
+        }
+        
+        public void withdraw(Long accountId, BigDecimal amount) {
+            Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+            
+            if (account.getBalance().compareTo(amount) < 0) {
+                throw new InsufficientFundsException("Insufficient funds");
+            }
+            
+            account.setBalance(account.getBalance().subtract(amount));
+            accountRepository.save(account);
+        }
+    }
+    ```
+    
+    **Summary:**
+    | DAO Method Type | Migration Target |
+    |-----------------|------------------|
+    | `findAll()`, `findById()`, `save()`, `delete()` | JpaRepository (inherited) |
+    | `findByXxx()` query methods | JpaRepository (derived queries) |
+    | `deposit()`, `withdraw()`, `transfer()` | Service layer |
+    | Any method with business logic | Service layer |
+  ruleID: struts-action-00009
+  when:
+    or:
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "Repository\\.deposit\\("
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "Repository\\.withdraw\\("
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "DAO\\.deposit\\("
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "DAO\\.withdraw\\("
 

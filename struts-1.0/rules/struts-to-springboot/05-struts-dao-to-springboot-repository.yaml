@@ -15,13 +15,6 @@
   message: |
     Legacy JDBC DAO classes should be replaced with Spring Data JPA repositories.
     
-    **IMPORTANT: File Rename Required**
-    
-    After converting a DAO class to a Repository interface, the file MUST be renamed:
-    - `AccountDAO.java` → `AccountRepository.java`
-    - `CustomerDAO.java` → `CustomerRepository.java`
-    - `OrderDAO.java` → `OrderRepository.java`
-    
     **Before (JDBC DAO):**
     ```java
     package com.example.dao;
@@ -70,9 +63,9 @@
     
     **After (Spring Data JPA Repository):**
     ```java
-    package com.example.repository;
+    package com.example.dao;  // Keep original package
     
-    import com.example.entity.Account;
+    import com.example.model.Account;  // Keep original package
     import org.springframework.data.jpa.repository.JpaRepository;
     import org.springframework.stereotype.Repository;
     
@@ -91,6 +84,23 @@
         List<Account> findByHolderNameContainingIgnoreCase(String name);
     }
     ```
+    
+    **CRITICAL: Business Methods Must Move to Service Layer**
+    
+    JpaRepository provides ONLY standard CRUD methods. Business logic methods from the
+    original DAO like `deposit()`, `withdraw()`, `transfer()` do NOT belong on Repository
+    and must be moved to a Service class. See rule `struts-dao-to-repository-00007`.
+    
+    | DAO Method | Repository? | Service? | Notes |
+    |------------|-------------|----------|-------|
+    | `findAll()` | ✓ Inherited | - | From JpaRepository |
+    | `findById()` | ✓ Inherited | - | From JpaRepository |
+    | `save()` | ✓ Inherited | - | Handles create & update |
+    | `deleteById()` | ✓ Inherited | - | From JpaRepository |
+    | `findByXxx()` | ✓ Derived | - | Custom query methods |
+    | `deposit()` | ✗ | ✓ Required | Business logic |
+    | `withdraw()` | ✗ | ✓ Required | Business logic |
+    | `transfer()` | ✗ | ✓ Required | Business logic |
     
     **Key Benefits:**
     - No boilerplate JDBC code
@@ -157,7 +167,7 @@
     
     **After (JPA Entity):**
     ```java
-    package com.example.entity;
+    package com.example.model;  // Keep original package
     
     import jakarta.persistence.*;
     import java.math.BigDecimal;
@@ -385,13 +395,13 @@
   message: |
     Update all code that uses DAO classes to use the new Repository interfaces.
     
-    **Import Changes:**
+    **Class Name Changes (package stays the same):**
     ```java
     // Before
     import com.example.dao.AccountDAO;
     
-    // After
-    import com.example.repository.AccountRepository;
+    // After (same package, different class name)
+    import com.example.dao.AccountRepository;
     ```
     
     **Field/Constructor Changes:**

@@ -244,14 +244,10 @@
     
     **Migration steps:**
     
-    1. **Rename file** (if needed):
-       - From: `MessageResources.properties`
-       - To: `messages.properties`
-    
-    2. **Move to resources root**:
+    1. **Move to resources root**:
        - Location: `src/main/resources/messages.properties`
     
-    3. **Keep same format** - Spring uses the same property file format:
+    2. **Keep same format** - Spring uses the same property file format:
     ```properties
     # Labels
     label.account.number=Account Number

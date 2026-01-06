@@ -1,0 +1,484 @@
+# Rules for adding Spring Boot Actuator and Health endpoints
+
+- category: optional
+  customVariables: []
+  description: Add Spring Boot Actuator dependency
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Actuator Documentation
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html
+    - title: Production-ready Features
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints
+  message: |
+    Add Spring Boot Actuator for production-ready features including health checks,
+    metrics, and application monitoring.
+    
+    **Add dependency to `pom.xml`:**
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    ```
+    
+    **Actuator provides these endpoints out of the box:**
+    
+    | Endpoint | Description |
+    |----------|-------------|
+    | `/actuator/health` | Application health status |
+    | `/actuator/info` | Application information |
+    | `/actuator/metrics` | Application metrics |
+    | `/actuator/env` | Environment properties |
+    | `/actuator/loggers` | Logger configuration |
+    | `/actuator/beans` | All Spring beans |
+    | `/actuator/mappings` | All @RequestMapping paths |
+    
+    **Benefits:**
+    - Health checks for container orchestration (Kubernetes, Docker)
+    - Metrics for monitoring systems (Prometheus, Grafana)
+    - Runtime configuration inspection
+    - Integration with Spring Boot Admin
+  ruleID: springboot-actuator-00001
+  when:
+    builtin.file:
+      pattern: pom\.xml
+
+- category: optional
+  customVariables: []
+  description: Configure Actuator endpoints in application.yml
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Actuator Endpoints Configuration
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.exposing
+  message: |
+    Configure which Actuator endpoints are exposed and their security settings.
+    
+    **Add to `application.yml`:**
+    ```yaml
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus
+          base-path: /actuator
+      endpoint:
+        health:
+          show-details: when-authorized
+          show-components: when-authorized
+        info:
+          enabled: true
+      info:
+        env:
+          enabled: true
+    ```
+    
+    **Or in `application.properties`:**
+    ```properties
+    # Expose specific endpoints
+    management.endpoints.web.exposure.include=health,info,metrics,prometheus
+    management.endpoints.web.base-path=/actuator
+    
+    # Health endpoint configuration
+    management.endpoint.health.show-details=when-authorized
+    management.endpoint.health.show-components=when-authorized
+    
+    # Info endpoint
+    management.endpoint.info.enabled=true
+    management.info.env.enabled=true
+    ```
+    
+    **Exposure Options:**
+    
+    | Setting | Description |
+    |---------|-------------|
+    | `include: "*"` | Expose all endpoints (not recommended for production) |
+    | `include: health,info` | Expose only health and info (safe for public) |
+    | `exclude: env,beans` | Exclude specific sensitive endpoints |
+    
+    **Health Details Options:**
+    
+    | Setting | Description |
+    |---------|-------------|
+    | `never` | Never show details |
+    | `when-authorized` | Show to authenticated users only |
+    | `always` | Always show (not recommended for production) |
+  ruleID: springboot-actuator-00002
+  when:
+    or:
+      - builtin.file:
+          pattern: application\.yml
+      - builtin.file:
+          pattern: application\.properties
+
+- category: optional
+  customVariables: []
+  description: Configure health endpoint for Kubernetes/container readiness
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Kubernetes Probes
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.kubernetes-probes
+  message: |
+    Configure health probes for Kubernetes liveness and readiness checks.
+    
+    **Add to `application.yml`:**
+    ```yaml
+    management:
+      endpoint:
+        health:
+          probes:
+            enabled: true
+          group:
+            liveness:
+              include: livenessState
+            readiness:
+              include: readinessState,db
+      health:
+        livenessstate:
+          enabled: true
+        readinessstate:
+          enabled: true
+    ```
+    
+    **Kubernetes probe endpoints:**
+    
+    | Endpoint | Purpose | Kubernetes Probe |
+    |----------|---------|------------------|
+    | `/actuator/health/liveness` | Is app running? | livenessProbe |
+    | `/actuator/health/readiness` | Is app ready for traffic? | readinessProbe |
+    | `/actuator/health` | Overall health | General check |
+    
+    **Kubernetes deployment configuration:**
+    ```yaml
+    spec:
+      containers:
+        - name: app
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+    ```
+    
+    **Health status mapping:**
+    
+    | Health Status | HTTP Code | Meaning |
+    |---------------|-----------|---------|
+    | `UP` | 200 | Component is healthy |
+    | `DOWN` | 503 | Component is unhealthy |
+    | `OUT_OF_SERVICE` | 503 | Component is out of service |
+    | `UNKNOWN` | 200 | Status unknown |
+  ruleID: springboot-actuator-00003
+  when:
+    builtin.file:
+      pattern: application\.yml
+
+- category: optional
+  customVariables: []
+  description: Create custom health indicator for database connectivity
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Custom Health Indicators
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.health.writing-custom-health-indicators
+  message: |
+    Create custom health indicators for application-specific health checks.
+    Spring Boot auto-configures health indicators for common components (DataSource, 
+    JMS, Mail, etc.), but you can add custom ones.
+    
+    **Auto-configured health indicators (no code needed):**
+    - `DataSourceHealthIndicator` - Database connectivity
+    - `DiskSpaceHealthIndicator` - Disk space availability
+    - `JmsHealthIndicator` - JMS broker connectivity
+    - `MailHealthIndicator` - Mail server connectivity
+    - `RedisHealthIndicator` - Redis connectivity
+    
+    **Create custom health indicator:**
+    ```java
+    package com.example.health;
+    
+    import org.springframework.boot.actuate.health.Health;
+    import org.springframework.boot.actuate.health.HealthIndicator;
+    import org.springframework.stereotype.Component;
+    
+    @Component
+    public class CustomServiceHealthIndicator implements HealthIndicator {
+    
+        private final ExternalService externalService;
+    
+        public CustomServiceHealthIndicator(ExternalService externalService) {
+            this.externalService = externalService;
+        }
+    
+        @Override
+        public Health health() {
+            try {
+                boolean serviceUp = externalService.isAvailable();
+                if (serviceUp) {
+                    return Health.up()
+                        .withDetail("service", "External Service")
+                        .withDetail("status", "Available")
+                        .build();
+                } else {
+                    return Health.down()
+                        .withDetail("service", "External Service")
+                        .withDetail("status", "Unavailable")
+                        .build();
+                }
+            } catch (Exception e) {
+                return Health.down()
+                    .withDetail("service", "External Service")
+                    .withDetail("error", e.getMessage())
+                    .build();
+            }
+        }
+    }
+    ```
+    
+    **Health response example:**
+    ```json
+    {
+      "status": "UP",
+      "components": {
+        "customService": {
+          "status": "UP",
+          "details": {
+            "service": "External Service",
+            "status": "Available"
+          }
+        },
+        "db": {
+          "status": "UP",
+          "details": {
+            "database": "H2",
+            "validationQuery": "isValid()"
+          }
+        },
+        "diskSpace": {
+          "status": "UP",
+          "details": {
+            "total": 499963174912,
+            "free": 123456789012
+          }
+        }
+      }
+    }
+    ```
+  ruleID: springboot-actuator-00004
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.springframework.stereotype.Component
+
+- category: optional
+  customVariables: []
+  description: Add application info to /actuator/info endpoint
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Info Endpoint
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.info
+  message: |
+    Configure the `/actuator/info` endpoint to display application information.
+    
+    **Add to `application.yml`:**
+    ```yaml
+    info:
+      app:
+        name: ${spring.application.name}
+        description: Bank Account Management Application
+        version: 1.0.0
+        java:
+          version: ${java.version}
+      contact:
+        team: Development Team
+        email: dev@example.com
+    
+    management:
+      info:
+        env:
+          enabled: true
+        git:
+          enabled: true
+          mode: full
+        build:
+          enabled: true
+    ```
+    
+    **Add build info from Maven (in `pom.xml`):**
+    ```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    ```
+    
+    **Add Git info (in `pom.xml`):**
+    ```xml
+    <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>5.0.0</version>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>revision</goal>
+                </goals>
+            </execution>
+        </executions>
+    </plugin>
+    ```
+    
+    **Info endpoint response example:**
+    ```json
+    {
+      "app": {
+        "name": "bank-app",
+        "description": "Bank Account Management Application",
+        "version": "1.0.0",
+        "java": {
+          "version": "17"
+        }
+      },
+      "build": {
+        "artifact": "bank-app",
+        "name": "Bank Application",
+        "time": "2024-01-15T10:30:00Z",
+        "version": "1.0.0"
+      },
+      "git": {
+        "branch": "main",
+        "commit": {
+          "id": "abc1234",
+          "time": "2024-01-15T09:00:00Z"
+        }
+      }
+    }
+    ```
+  ruleID: springboot-actuator-00005
+  when:
+    builtin.file:
+      pattern: application\.yml
+
+- category: optional
+  customVariables: []
+  description: Secure Actuator endpoints
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Actuator Security
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints.security
+  message: |
+    Secure Actuator endpoints to prevent unauthorized access to sensitive information.
+    
+    **Option 1: Expose only safe endpoints (recommended for public apps):**
+    ```yaml
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info
+      endpoint:
+        health:
+          show-details: never
+    ```
+    
+    **Option 2: Use different port (management port):**
+    ```yaml
+    management:
+      server:
+        port: 8081  # Actuator on separate port
+        address: 127.0.0.1  # Only accessible locally
+      endpoints:
+        web:
+          exposure:
+            include: "*"
+    ```
+    
+    **Option 3: Secure with Spring Security:**
+    ```java
+    @Configuration
+    @EnableWebSecurity
+    public class ActuatorSecurityConfig {
+    
+        @Bean
+        public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+            http
+                .securityMatcher("/actuator/**")
+                .authorizeHttpRequests(auth -> auth
+                    // Public endpoints
+                    .requestMatchers("/actuator/health").permitAll()
+                    .requestMatchers("/actuator/info").permitAll()
+                    // Secured endpoints
+                    .requestMatchers("/actuator/**").hasRole("ACTUATOR")
+                )
+                .httpBasic(Customizer.withDefaults());
+            return http.build();
+        }
+    }
+    ```
+    
+    **Add Actuator user in `application.yml`:**
+    ```yaml
+    spring:
+      security:
+        user:
+          name: actuator
+          password: ${ACTUATOR_PASSWORD:changeme}
+          roles: ACTUATOR
+    ```
+    
+    **Security recommendations:**
+    
+    | Endpoint | Public | Internal Only |
+    |----------|--------|---------------|
+    | `/actuator/health` | ✓ (no details) | ✓ (with details) |
+    | `/actuator/info` | ✓ | ✓ |
+    | `/actuator/metrics` | ✗ | ✓ |
+    | `/actuator/env` | ✗ | ✓ |
+    | `/actuator/beans` | ✗ | ✓ |
+    | `/actuator/loggers` | ✗ | ✓ |
+    | `/actuator/heapdump` | ✗ | ✗ (disable) |
+    | `/actuator/threaddump` | ✗ | ✓ (if needed) |
+  ruleID: springboot-actuator-00006
+  when:
+    or:
+      - builtin.file:
+          pattern: application\.yml
+      - java.referenced:
+          location: IMPORT
+          pattern: org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+
+

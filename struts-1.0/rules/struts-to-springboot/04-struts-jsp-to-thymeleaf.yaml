@@ -13,23 +13,15 @@
     - title: Spring Boot Thymeleaf
       url: https://docs.spring.io/spring-boot/docs/current/reference/html/web.html#web.servlet.spring-mvc.template-engines
   message: |
-    **IMPORTANT: File Rename and Relocation Required**
-    
-    JSP files must be converted to Thymeleaf HTML templates and moved to the correct location.
+    JSP files must be converted to Thymeleaf HTML templates.
     
     **Migration Steps:**
     
     1. **Create templates directory:** `src/main/resources/templates/`
     
-    2. **Rename and move each JSP file:**
-    
-    | Source (JSP) | Target (Thymeleaf) |
-    |--------------|-------------------|
-    | `src/main/webapp/list.jsp` | `src/main/resources/templates/list.html` |
-    | `src/main/webapp/view.jsp` | `src/main/resources/templates/view.html` |
-    | `src/main/webapp/edit.jsp` | `src/main/resources/templates/edit.html` |
-    | `src/main/webapp/error.jsp` | `src/main/resources/templates/error.html` |
-    | `src/main/webapp/WEB-INF/jsp/*.jsp` | `src/main/resources/templates/*.html` |
+    2. **Convert JSP to Thymeleaf HTML:**
+       - Change file extension from `.jsp` to `.html`
+       - Move to `src/main/resources/templates/` directory
     
     3. **Convert content:**
     

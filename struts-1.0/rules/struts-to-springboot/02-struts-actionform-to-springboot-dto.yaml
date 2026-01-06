@@ -19,16 +19,10 @@
     
     | Aspect | From (Struts) | To (Spring) |
     |--------|---------------|-------------|
-    | Package | `*.form.*` | `*.dto.*` |
+    | Package | Keep original package | Keep original package |
     | Extends | `extends ActionForm` | Remove (plain POJO) |
     | Annotations | None | Bean Validation annotations |
-    | Naming | `*Form` | `*DTO` or `*Request` |
-    
-    **IMPORTANT: File Rename Required**
-    After converting a ActionForm class to a DTO class, the file MUST be renamed:
-    - `ItemForm.java` → `ItemDTO.java`
-    - `CustomerForm.java` → `CustomerDTO.java`
-    - `OrderForm.java` → `OrderDTO.java`
+    | Naming | `*Form` | Keep original name |
     
     **Before (Struts ActionForm):**
     ```java
@@ -67,12 +61,12 @@
     
     **After (Spring DTO with Bean Validation):**
     ```java
-    package com.example.dto;
+    package com.example.form;  // Keep original package
     
     import jakarta.validation.constraints.*;
     import java.math.BigDecimal;
     
-    public class ItemDTO {
+    public class ItemForm {  // Keep original name
     
         private Long id;  // Use proper type, not String
     
@@ -419,4 +413,97 @@
       filePattern: ".*Form\\.java"
       pattern: "private\\s+String\\s+(type|status|category|priority)\\s*;"
 
+- category: mandatory
+  customVariables: []
+  description: Update Action/Controller code to use typed Form fields correctly
+  effort: 4
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring MVC Form Binding
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-modelattrib-method-args
+  message: |
+    **CRITICAL: When Form fields change from String to typed fields, ALL code that uses
+    those forms MUST be updated.**
+    
+    When converting ActionForm fields from String to proper types (Long, BigDecimal, Enum),
+    the Action/Controller classes that USE these forms must also be updated to work with
+    the new types directly - do NOT parse or wrap values that are already typed.
+    
+    **Common Mistakes to Avoid:**
+    
+    | Mistake | Why It Fails | Correct Code |
+    |---------|--------------|--------------|
+    | `Long.parseLong(form.getId())` | `getId()` already returns `Long` | `form.getId()` |
+    | `new BigDecimal(form.getAmount())` | `getAmount()` already returns `BigDecimal` | `form.getAmount()` |
+    | `form.getId().trim()` | `Long` has no `trim()` method | `form.getId()` |
+    | `"DEPOSIT".equals(form.getType())` | `getType()` returns `Enum`, not `String` | `TransactionType.DEPOSIT.equals(form.getType())` or `form.getType() == TransactionType.DEPOSIT` |
+    | `account.setType(form.getType())` when types differ | Form uses `Enum`, entity uses `String` | `account.setType(form.getType().name())` |
+    
+    **Before (Using String-based form - OLD Struts code):**
+    ```java
+    public ActionForward execute(...) {
+        // OLD: Form fields were all Strings, needed parsing
+        Long accountId = Long.parseLong(txForm.getAccountId());
+        BigDecimal amount = new BigDecimal(txForm.getAmount());
+        String transactionType = txForm.getTransactionType();
+        
+        if ("DEPOSIT".equals(transactionType)) {
+            accountDAO.deposit(accountId, amount);
+        }
+        
+        // Check if ID exists
+        if (form.getId() != null && !form.getId().trim().isEmpty()) {
+            // process existing record
+        }
+    }
+    ```
+    
+    **After (Using typed form - NEW Spring code):**
+    ```java
+    @PostMapping("/transaction")
+    public String processTransaction(TransactionForm txForm, Model model) {
+        // NEW: Form fields are already typed - use directly!
+        Long accountId = txForm.getAccountId();           // Already Long
+        BigDecimal amount = txForm.getAmount();           // Already BigDecimal
+        TransactionType type = txForm.getTransactionType(); // Already Enum
+        
+        if (TransactionType.DEPOSIT == type) {            // Enum comparison
+            accountService.deposit(accountId, amount);
+        }
+        
+        // Check if ID exists (Long comparison)
+        if (txForm.getId() != null) {
+            // process existing record
+        }
+    }
+    ```
+    
+    **Type Mapping Summary:**
+    
+    | Form Field Type | Direct Usage (No Parsing) | Enum to String | String to Enum |
+    |-----------------|---------------------------|----------------|----------------|
+    | `Long` | `form.getId()` | N/A | N/A |
+    | `BigDecimal` | `form.getAmount()` | N/A | N/A |
+    | `Enum` | `form.getType()` | `form.getType().name()` | `EnumType.valueOf(str)` |
+    
+    **Key Points:**
+    - Remove all `Long.parseLong()` calls for Long fields
+    - Remove all `new BigDecimal()` wrappers for BigDecimal fields
+    - Remove all `.trim()` calls on non-String fields
+    - Use enum comparison (`==` or `.equals()`) instead of String comparison
+    - When setting entity fields from form, ensure type compatibility
+  ruleID: struts-actionform-00007
+  when:
+    or:
+      - java.referenced:
+          location: IMPORT
+          pattern: org.apache.struts.action.ActionForm
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "Long\\.parseLong\\(.*Form\\."
+      - builtin.filecontent:
+          filePattern: ".*Action\\.java"
+          pattern: "new\\s+BigDecimal\\(.*Form\\."
 
