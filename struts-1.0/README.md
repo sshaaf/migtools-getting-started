@@ -37,7 +37,7 @@ This application showcases classic Java EE patterns from the Struts 1.x era:
 ## Project Structure
 
 ```
-struts-bank-demo/
+struts-1.0/
 ├── pom.xml
 ├── README.md
 └── src/
@@ -83,7 +83,7 @@ struts-bank-demo/
 ### Build
 
 ```bash
-cd struts-bank-demo
+cd struts-1.0
 mvn clean package
 ```
 
@@ -138,9 +138,9 @@ Since this is a legacy `javax.*` namespace application, use servers that support
    mvn clean package
    ```
 
-2. Copy `target/struts-bank-demo.war` to your Tomcat's `webapps/` directory
+2. Copy `target/struts-1.0.war` to your Tomcat's `webapps/` directory
 
-3. Access at: **http://localhost:8080/struts-bank-demo/**
+3. Access at: **http://localhost:8080/struts-1.0/**
 
 ## Sample Data
 
@@ -195,11 +195,12 @@ This project includes comprehensive **Kantra rules** for automated migration ana
 rules/struts-to-springboot/
 ├── ruleset.yaml                              # Ruleset metadata
 ├── 00-struts-dependencies-to-springboot.yaml # Maven dependency migrations
-├── 01-struts-action-to-springboot-controller.yaml # Action → @Controller
-├── 02-struts-actionform-to-springboot-dto.yaml    # ActionForm → DTO + Bean Validation
+├── 01-struts-action-to-springboot-controller.yaml # Action → @Controller + Service layer
+├── 02-struts-actionform-to-springboot-dto.yaml    # ActionForm → DTO + Bean Validation + Type conversions
 ├── 03-struts-config-to-springboot.yaml            # Configuration migrations
 ├── 04-struts-jsp-to-thymeleaf.yaml                # JSP → Thymeleaf templates
-├── 05-struts-dao-to-springboot-repository.yaml    # JDBC DAO → Spring Data JPA
+├── 05-struts-dao-to-springboot-repository.yaml    # JDBC DAO → Spring Data JPA Repository
+├── 08-springboot-actuator-health.yaml             # Spring Boot Actuator + Health endpoints
 └── README.md                                      # Migration guide
 ```
 
