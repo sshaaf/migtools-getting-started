@@ -1,0 +1,375 @@
+# Rules for migrating Struts configuration files to Spring Boot
+
+- category: mandatory
+  customVariables: []
+  description: Delete struts-config.xml - routing handled by annotations
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring MVC Annotations
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-requestmapping
+  message: |
+    The `struts-config.xml` file is no longer needed. All routing is handled by annotations.
+    
+    **Extract routing information before deletion:**
+    
+    **struts-config.xml example:**
+    ```xml
+    <struts-config>
+        <form-beans>
+            <form-bean name="accountForm" type="com.example.form.AccountForm"/>
+        </form-beans>
+    
+        <action-mappings>
+            <action path="/listAccounts"
+                    type="com.example.action.ListAccountsAction">
+                <forward name="success" path="/WEB-INF/jsp/list.jsp"/>
+            </action>
+    
+            <action path="/saveAccount"
+                    type="com.example.action.SaveAccountAction"
+                    name="accountForm"
+                    validate="true"
+                    input="/WEB-INF/jsp/edit.jsp">
+                <forward name="success" path="/listAccounts.do" redirect="true"/>
+            </action>
+        </action-mappings>
+    
+        <message-resources parameter="MessageResources"/>
+    </struts-config>
+    ```
+    
+    **Map to Spring Controller:**
+    ```java
+    @Controller
+    @RequestMapping("/accounts")
+    public class AccountController {
+    
+        // /listAccounts → GET /accounts
+        @GetMapping
+        public String list(Model model) {
+            return "list";  // Thymeleaf template
+        }
+    
+        // /saveAccount → POST /accounts/save
+        @PostMapping("/save")
+        public String save(@Valid @ModelAttribute AccountDTO account,
+                          BindingResult result,
+                          RedirectAttributes redirectAttributes) {
+            if (result.hasErrors()) {
+                return "edit";  // input="/WEB-INF/jsp/edit.jsp"
+            }
+            // ... save logic
+            return "redirect:/accounts";  // redirect="true"
+        }
+    }
+    ```
+    
+    **After extracting mappings, DELETE:**
+    - `src/main/webapp/WEB-INF/struts-config.xml`
+  ruleID: struts-config-00001
+  when:
+    builtin.filecontent:
+      filePattern: "struts-config\\.xml"
+      pattern: "<struts-config"
+
+- category: mandatory
+  customVariables: []
+  description: Delete web.xml - Spring Boot auto-configures servlet
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Auto-configuration
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.auto-configuration
+  message: |
+    The `web.xml` file is no longer needed. Spring Boot auto-configures the servlet.
+    
+    **Extract configuration before deletion:**
+    
+    **web.xml example:**
+    ```xml
+    <web-app>
+        <servlet>
+            <servlet-name>action</servlet-name>
+            <servlet-class>org.apache.struts.action.ActionServlet</servlet-class>
+            <init-param>
+                <param-name>config</param-name>
+                <param-value>/WEB-INF/struts-config.xml</param-value>
+            </init-param>
+        </servlet>
+    
+        <servlet-mapping>
+            <servlet-name>action</servlet-name>
+            <url-pattern>*.do</url-pattern>
+        </servlet-mapping>
+    
+        <session-config>
+            <session-timeout>30</session-timeout>
+        </session-config>
+    
+        <welcome-file-list>
+            <welcome-file>index.jsp</welcome-file>
+        </welcome-file-list>
+    </web-app>
+    ```
+    
+    **Map to application.yml:**
+    ```yaml
+    server:
+      port: 8080
+      servlet:
+        context-path: /
+        session:
+          timeout: 30m
+    ```
+    
+    **Create welcome page controller:**
+    ```java
+    @Controller
+    public class HomeController {
+        @GetMapping("/")
+        public String home() {
+            return "redirect:/accounts";  // Or your main page
+        }
+    }
+    ```
+    
+    **After extracting configuration, DELETE:**
+    - `src/main/webapp/WEB-INF/web.xml`
+  ruleID: struts-config-00002
+  when:
+    builtin.filecontent:
+      filePattern: "web\\.xml"
+      pattern: "org.apache.struts.action.ActionServlet"
+
+- category: mandatory
+  customVariables: []
+  description: Create application.yml for Spring Boot configuration
+  effort: 3
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring Boot Configuration
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html
+  message: |
+    Create `application.yml` (or `application.properties`) for Spring Boot configuration.
+    
+    **Create file:** `src/main/resources/application.yml`
+    
+    ```yaml
+    spring:
+      application:
+        name: my-application
+    
+      # Database Configuration
+      datasource:
+        url: jdbc:h2:mem:mydb
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
+    
+      # JPA Configuration
+      jpa:
+        hibernate:
+          ddl-auto: update
+        show-sql: true
+        properties:
+          hibernate:
+            format_sql: true
+    
+      # H2 Console (development only)
+      h2:
+        console:
+          enabled: true
+          path: /h2-console
+    
+      # Thymeleaf Configuration
+      thymeleaf:
+        cache: false  # Disable in development
+        prefix: classpath:/templates/
+        suffix: .html
+    
+      # Message Resources
+      messages:
+        basename: messages
+        encoding: UTF-8
+    
+    # Server Configuration
+    server:
+      port: 8080
+      servlet:
+        context-path: /
+        session:
+          timeout: 30m
+    
+    # Logging
+    logging:
+      level:
+        root: INFO
+        com.example: DEBUG
+        org.hibernate.SQL: DEBUG
+    ```
+    
+    **Environment-specific profiles:**
+    - `application-dev.yml` - Development settings
+    - `application-prod.yml` - Production settings
+    
+    **Activate profile:**
+    ```bash
+    java -jar app.jar --spring.profiles.active=prod
+    ```
+  ruleID: struts-config-00003
+  when:
+    builtin.filecontent:
+      filePattern: "struts-config\\.xml"
+      pattern: "<struts-config"
+
+- category: mandatory
+  customVariables: []
+  description: Migrate MessageResources to Spring messages.properties
+  effort: 1
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring MessageSource
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#context-functionality-messagesource
+  message: |
+    Struts `MessageResources.properties` can be reused with Spring's `MessageSource`.
+    
+    **Migration steps:**
+    
+    1. **Move to resources root**:
+       - Location: `src/main/resources/messages.properties`
+    
+    2. **Keep same format** - Spring uses the same property file format:
+    ```properties
+    # Labels
+    label.account.number=Account Number
+    label.account.holder=Holder Name
+    
+    # Messages
+    message.account.saved=Account {0} saved successfully
+    message.account.deleted=Account deleted
+    
+    # Errors
+    error.name.required=Name is required
+    error.email.invalid=Invalid email format
+    ```
+    
+    **Configure in application.yml** (optional, defaults work):
+    ```yaml
+    spring:
+      messages:
+        basename: messages
+        encoding: UTF-8
+    ```
+    
+    **Usage in Thymeleaf:**
+    ```html
+    <label th:text="#{label.account.number}">Account Number</label>
+    <span th:text="#{message.account.saved(${account.number})}">Saved</span>
+    ```
+    
+    **Usage in Controller:**
+    ```java
+    @Autowired
+    private MessageSource messageSource;
+    
+    String msg = messageSource.getMessage("message.account.saved",
+        new Object[]{account.getNumber()}, locale);
+    ```
+  ruleID: struts-config-00004
+  when:
+    builtin.filecontent:
+      filePattern: "struts-config\\.xml"
+      pattern: "<message-resources"
+
+- category: mandatory
+  customVariables: []
+  description: Create global exception handler
+  effort: 2
+  labels:
+    - konveyor.io/source=struts
+    - konveyor.io/target=springboot
+  links:
+    - title: Spring @ControllerAdvice
+      url: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller-advice
+  message: |
+    Replace Struts exception handling with Spring's `@ControllerAdvice`.
+    
+    **Struts approach** (in struts-config.xml):
+    ```xml
+    <global-exceptions>
+        <exception type="java.lang.Exception"
+                   path="/error.jsp"
+                   key="error.general"/>
+    </global-exceptions>
+    ```
+    
+    **Spring approach:**
+    
+    **Create `GlobalExceptionHandler.java`:**
+    ```java
+    package com.example.exception;
+    
+    import org.springframework.ui.Model;
+    import org.springframework.web.bind.annotation.ControllerAdvice;
+    import org.springframework.web.bind.annotation.ExceptionHandler;
+    
+    @ControllerAdvice
+    public class GlobalExceptionHandler {
+    
+        @ExceptionHandler(RuntimeException.class)
+        public String handleRuntimeException(RuntimeException ex, Model model) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "error";
+        }
+    
+        @ExceptionHandler(IllegalArgumentException.class)
+        public String handleIllegalArgument(IllegalArgumentException ex, Model model) {
+            model.addAttribute("errorMessage", "Invalid input: " + ex.getMessage());
+            return "error";
+        }
+    
+        @ExceptionHandler(Exception.class)
+        public String handleGenericException(Exception ex, Model model) {
+            model.addAttribute("errorMessage", "An unexpected error occurred");
+            model.addAttribute("technicalDetails", ex.getMessage());
+            return "error";
+        }
+    }
+    ```
+    
+    **Create custom exceptions:**
+    ```java
+    public class EntityNotFoundException extends RuntimeException {
+        public EntityNotFoundException(String entityName, Long id) {
+            super(entityName + " not found with ID: " + id);
+        }
+    }
+    ```
+    
+    **Create error template** (`templates/error.html`):
+    ```html
+    <!DOCTYPE html>
+    <html xmlns:th="http://www.thymeleaf.org">
+    <head><title>Error</title></head>
+    <body>
+        <h1>Error</h1>
+        <p th:text="${errorMessage}">Error message</p>
+    </body>
+    </html>
+    ```
+  ruleID: struts-config-00005
+  when:
+    builtin.filecontent:
+      filePattern: "struts-config\\.xml"
+      pattern: "<global-exceptions"
+
+

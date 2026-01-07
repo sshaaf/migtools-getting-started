@@ -32,6 +32,7 @@ Each module represents a **complete, example application** with intentionally de
 | **[hotrod-repair](./hotrod-repair/)** | **JBoss EAP 7 → EAP 8** | Car repair shop management system showcasing EAP 7 to EAP 8 migration patterns | JBoss EAP 7, Java EE 7, JSP, PostgreSQL | Jakarta EE transition, servlet API changes, EJB updates |
 | **[spring-framework-migration](./spring-framework-migration/)** | **Spring Framework 5 → Spring Framework 6** | User management system demonstrating Spring Framework 5 to 6 migration scenarios | Spring Framework 5, Spring Security 5, JPA | `WebMvcConfigurerAdapter`, security configuration, `javax.*` → `jakarta.*` |
 | **[springboot-to-quarkus-migration](./springboot-to-quarkus-migration/)** | **Spring Boot 2.7 → Quarkus 3.28.2** | Comprehensive e-commerce application showcasing Spring Boot to Quarkus migration patterns | Spring Boot 2.7.18, Spring Security, Spring Data JPA | Spring annotations → JAX-RS/CDI, `javax.*` → `jakarta.*`, configuration properties |
+| **[struts-1.0](./struts-1.0/)** | **Apache Struts 1.x → Spring Boot 3.x** | Bank account management system demonstrating legacy Struts to Spring Boot modernization | Apache Struts 1.x, JDBC DAO, JSP, Servlet 2.x | Action → @Controller, ActionForm → DTO + Bean Validation, JDBC → Spring Data JPA, JSP → Thymeleaf |
 
 ##  **Project Structure**
 
@@ -44,6 +45,7 @@ mta-demo-project/
 ├── 📁 hotrod-repair/                 # JBoss EAP 7 → EAP 8 migration
 ├── 📁 spring-framework-migration/    # Spring Framework 5 → 6 migration
 ├── 📁 springboot-to-quarkus-migration/ # Spring Boot 2.7 → Quarkus 3.28.2 migration
+├── 📁 struts-1.0/                    # Apache Struts 1.x → Spring Boot 3.x migration
 ├── 📁 .github/                       # CI/CD workflows and automation
 ├── 📄 pom.xml                        # Parent Maven configuration
 ├── 📄 README.md                      # This file
@@ -100,6 +102,7 @@ Next you should configure a Modernization profile with targets. For example
 | **hotrod-repair** | JDK 8+ | PostgreSQL (via Docker) | `mvn clean package` |
 | **spring-framework-migration** | JDK 8+ | H2 Database (embedded) | `mvn clean package` |
 | **springboot-to-quarkus-migration** | JDK 11+ (JDK 17+ recommended) | H2 Database (embedded) | `mvn clean package` |
+| **struts-1.0** | JDK 8+ | Tomcat 9.x, H2 Database (embedded) | `mvn clean package` |
 
 ## 🔬 **Using with Migration Toolkit for Applications (MTA)**
 
@@ -122,6 +125,9 @@ Next you should configure a Modernization profile with targets. For example
    
    # Analyze Spring Boot to Quarkus migration
    mta-cli --input springboot-to-quarkus-migration/ --target quarkus3 --output reports/springboot-quarkus-analysis
+   
+   # Analyze Struts to Spring Boot migration (with custom rules)
+   kantra analyze --input struts-1.0/ --rules struts-1.0/rules/ --output reports/struts-analysis
    ```
 
 3. **Review Migration Reports**

@@ -1,0 +1,47 @@
+# Test cases for Spring Boot annotation migration rules
+# These tests verify that Spring Boot annotations are properly detected
+
+rulesPath: ../02-springboot-annotations-to-quarkus.yaml
+providers:
+  - name: java
+    dataPath: ../../../../src/main/java
+
+tests:
+  # Test 1: @SpringBootApplication annotation
+  - ruleID: springboot-annotations-to-quarkus-10001
+    testCases:
+      - name: detect-springbootapplication-annotation
+        hasIncidents:
+          atLeast: 1
+        #messageMatches: ".*SpringBootApplication.*"
+
+  # Test 2: @RestController annotation  
+  - ruleID: springboot-annotations-to-quarkus-10002
+    testCases:
+      - name: detect-restcontroller-annotation
+        hasIncidents:
+          atLeast: 1
+        #messageMatches: ".*RestController.*"
+
+  # Test 3: @Service annotation
+  - ruleID: springboot-annotations-to-quarkus-10012
+    testCases:
+      - name: detect-service-annotation
+        hasIncidents:
+          atLeast: 1
+        #messageMatches: ".*@Service.*"
+
+  # Test 4: @Repository annotation
+  - ruleID: springboot-annotations-to-quarkus-10013
+    testCases:
+      - name: detect-repository-annotation
+        hasIncidents:
+          atLeast: 1
+
+  # Test 5: @Autowired annotation
+  - ruleID: springboot-annotations-to-quarkus-10011
+    testCases:
+      - name: detect-autowired-annotation
+        hasIncidents:
+          atLeast: 1
+

@@ -1,0 +1,20 @@
+rulesPath: ../00-springboot-bom-to-quarkus.yaml
+providers:
+  - name: builtin
+    dataPath: ./data/bom
+tests:
+  - ruleID: springboot-bom-to-quarkus-00001
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1
+
+  - ruleID: springboot-bom-to-quarkus-00002
+    testCases:
+      - name: tc-1
+        analysisParams:
+          mode: "source-only"
+        hasIncidents:
+          exactly: 1

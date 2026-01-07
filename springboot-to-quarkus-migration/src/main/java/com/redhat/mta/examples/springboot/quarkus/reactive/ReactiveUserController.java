@@ -4,9 +4,9 @@ import com.redhat.mta.examples.springboot.quarkus.dto.UserResponse;
 import com.redhat.mta.examples.springboot.quarkus.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -17,27 +17,31 @@ import java.util.stream.Collectors;
 /**
  * Reactive User Controller demonstrating Spring WebFlux patterns for Quarkus migration.
  * 
- * Migration to Quarkus:
- * - Replace @RestController with @Path
- * - Replace Mono<T> with Uni<T> (Mutiny)
- * - Replace Flux<T> with Multi<T> (Mutiny)
- * - Replace WebFlux operators with Mutiny operators
- * - Replace @RequestMapping with JAX-RS annotations
- * - Replace reactive ServerResponse with JAX-RS Response
+ * Deprecated Spring WebFlux patterns demonstrated:
+ * - @RestController + @RequestMapping - will be replaced with JAX-RS @Path
+ * - @GetMapping/@PostMapping/@PutMapping/@DeleteMapping - will be replaced with JAX-RS @GET/@POST/@PUT/@DELETE
+ * - @PathVariable - will be replaced with @PathParam
+ * - @RequestParam - will be replaced with @QueryParam
+ * - @RequestBody - will be replaced with method parameter
+ * - @Autowired - will be replaced with @Inject
+ * - Mono<T> - will be replaced with Uni<T> (Mutiny)
+ * - Flux<T> - will be replaced with Multi<T> (Mutiny)
+ * - WebFlux operators - will be replaced with Mutiny operators
+ * - Spring MediaType - will be replaced with JAX-RS MediaType
  */
-@Path("/api/reactive/users")
+@RestController
+@RequestMapping("/api/reactive/users")
 public class ReactiveUserController {
 
     private static final Logger logger = LoggerFactory.getLogger(ReactiveUserController.class);
 
-    @Inject
+    @Autowired
     private ReactiveUserService reactiveUserService;
 
     /**
      * Get all users reactively - Flux<T> → Multi<T>
      */
-    @GET
-    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<UserResponse> streamAllUsers() {
         logger.debug("Streaming all users reactively");
         
@@ -54,9 +58,8 @@ public class ReactiveUserController {
     /**
      * Get user by ID reactively - Mono<T> → Uni<T>
      */
-    @GET
-    @Path("/{id}")
-    public Mono<UserResponse> getUser(@PathParam("id") Long id) {
+    @GetMapping("/{id}")
+    public Mono<UserResponse> getUser(@PathVariable("id") Long id) {
         logger.debug("Getting user reactively: {}", id);
         
         return reactiveUserService.findUserById(id)
@@ -72,8 +75,8 @@ public class ReactiveUserController {
     /**
      * Create user reactively with validation
      */
-    @POST
-    public Mono<UserResponse> createUser(User user) {
+    @PostMapping
+    public Mono<UserResponse> createUser(@RequestBody User user) {
         logger.info("Creating user reactively");
         
         return Mono.just(user)
@@ -87,9 +90,8 @@ public class ReactiveUserController {
     /**
      * Update user reactively
      */
-    @PUT
-    @Path("/{id}")
-    public Mono<UserResponse> updateUser(@PathParam("id") Long id, User user) {
+    @PutMapping("/{id}")
+    public Mono<UserResponse> updateUser(@PathVariable("id") Long id, @RequestBody User user) {
         logger.info("Updating user reactively: {}", id);
         
         return Mono.zip(
@@ -114,9 +116,8 @@ public class ReactiveUserController {
     /**
      * Delete user reactively
      */
-    @DELETE
-    @Path("/{id}")
-    public Mono<Void> deleteUser(@PathParam("id") Long id) {
+    @DeleteMapping("/{id}")
+    public Mono<Void> deleteUser(@PathVariable("id") Long id) {
         logger.info("Deleting user reactively: {}", id);
         
         return reactiveUserService.deleteUser(id)
@@ -126,12 +127,11 @@ public class ReactiveUserController {
     /**
      * Search users with reactive pagination
      */
-    @GET
-    @Path("/search")
+    @GetMapping("/search")
     public Flux<UserResponse> searchUsers(
-            @QueryParam("name") String name,
-            @QueryParam("page") @DefaultValue("0") int page,
-            @QueryParam("size") @DefaultValue("10") int size) {
+            @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         
         logger.debug("Searching users reactively: name={}, page={}, size={}", name, page, size);
         
@@ -145,8 +145,7 @@ public class ReactiveUserController {
     /**
      * Get user count reactively
      */
-    @GET
-    @Path("/count")
+    @GetMapping("/count")
     public Mono<Long> getUserCount() {
         return reactiveUserService.countUsers()
                 .doOnSuccess(count -> logger.debug("User count: {}", count));
@@ -155,9 +154,8 @@ public class ReactiveUserController {
     /**
      * Process users in batch reactively
      */
-    @POST
-    @Path("/batch-process")
-    public Flux<UserResponse> batchProcessUsers(Flux<User> userFlux) {
+    @PostMapping("/batch-process")
+    public Flux<UserResponse> batchProcessUsers(@RequestBody Flux<User> userFlux) {
         logger.info("Processing users in batch reactively");
         
         return userFlux
@@ -175,9 +173,7 @@ public class ReactiveUserController {
     /**
      * Server-Sent Events endpoint for real-time updates
      */
-    @GET
-    @Path("/events")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> userEvents() {
         return Flux.interval(Duration.ofSeconds(1))
                 .map(sequence -> "User event " + sequence + " at " + LocalDateTime.now())

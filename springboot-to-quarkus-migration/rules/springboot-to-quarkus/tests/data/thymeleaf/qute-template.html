@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{title}</title>
+</head>
+<body>
+    <h1>{pageTitle}</h1>
+    
+    <!-- Migrated from Thymeleaf to Qute syntax -->
+    {#if user.active}
+        <div>
+            <p>User {user.name} is active</p>
+        </div>
+    {/if}
+    
+    <ul>
+        {#for user in users}
+            <li>{user.name}</li>
+        {/for}
+    </ul>
+    
+    <a href="/users/{user.id}">View User</a>
+    
+    <!-- Fragment inclusion -->
+    {#include fragments/header.html /}
+    
+    <!-- Security expressions -->
+    {#if identity.isAnonymous == false}
+        Welcome {identity.principal.name}!
+    {/if}
+    
+    {#if identity.hasRole('ADMIN')}
+        <a href="/admin">Admin Panel</a>
+    {/if}
+    
+    <!-- Form handling -->
+    <form action="/users" method="post">
+        <input type="text" name="firstName" value="{user.firstName}" 
+               class="{#if validationErrors.firstName}error{/if}"/>
+        {#if validationErrors.firstName}
+            <span class="error">{validationErrors.firstName}</span>
+        {/if}
+    </form>
+    
+    <!-- Internationalization -->
+    <h2>{msg:page_title}</h2>
+    <p>{msg:welcome_message(user.name)}</p>
+</body>
+</html>
+
+
+
+
+
+
+
+

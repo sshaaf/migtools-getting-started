@@ -78,6 +78,7 @@
   when:
     java.referenced:
       pattern: org.springframework.data.jpa.domain.Specification
+      location: TYPE
 
 - category: mandatory
   customVariables: []

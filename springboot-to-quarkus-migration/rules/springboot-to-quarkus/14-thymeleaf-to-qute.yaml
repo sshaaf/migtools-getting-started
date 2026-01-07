@@ -1,0 +1,486 @@
+- category: mandatory
+  customVariables: []
+  description: Replace Thymeleaf dependency with Quarkus Qute
+  effort: 3
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Qute Templating Guide
+        url: https://quarkus.io/guides/qute
+    - title: Qute Reference Guide
+        url: https://quarkus.io/guides/qute-reference
+  message: |
+    Replace Spring Boot Thymeleaf dependency with Quarkus Qute templating engine.
+    
+    Remove:
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+    ```
+    
+    Add:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-qute</artifactId>
+    </dependency>
+    ```
+    
+    Qute is Quarkus's type-safe templating engine that provides:
+    - Type-safe templates with compile-time validation
+    - Better performance than traditional templating engines
+    - Integration with Quarkus dependency injection
+    - Support for both server-side rendering and email templates
+  ruleID: thymeleaf-to-qute-00001
+  when:
+    java.dependency:
+      lowerbound: 0.0.0
+      name: org.springframework.boot.spring-boot-starter-thymeleaf
+
+- category: mandatory
+  customVariables: []
+  description: Replace Thymeleaf @Controller with Quarkus @Path for template rendering
+  effort: 4
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Qute Web Integration
+      url: https://quarkus.io/guides/qute#web-integration
+  message: |
+    Replace Spring MVC @Controller methods that return Thymeleaf views with Quarkus JAX-RS endpoints using Qute templates.
+    
+    Before (Spring Boot + Thymeleaf):
+    ```java
+    @Controller
+    public class UserController {
+        @GetMapping("/users")
+        public String listUsers(Model model) {
+            model.addAttribute("users", userService.findAll());
+            return "users/list"; // returns users/list.html
+        }
+        
+        @GetMapping("/users/{id}")
+        public String showUser(@PathVariable Long id, Model model) {
+            model.addAttribute("user", userService.findById(id));
+            return "users/detail";
+        }
+    }
+    ```
+    
+    After (Quarkus + Qute):
+    ```java
+    import jakarta.inject.Inject;
+    import jakarta.ws.rs.GET;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.PathParam;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.core.MediaType;
+    import io.quarkus.qute.Template;
+    import io.quarkus.qute.TemplateInstance;
+    
+    @Path("/users")
+    public class UserController {
+        @Inject
+        Template usersList; // users/list.html template
+        
+        @Inject
+        Template userDetail; // users/detail.html template
+        
+        @GET
+        @Produces(MediaType.TEXT_HTML)
+        public TemplateInstance listUsers() {
+            return usersList.data("users", userService.findAll());
+        }
+        
+        @GET
+        @Path("/{id}")
+        @Produces(MediaType.TEXT_HTML)
+        public TemplateInstance showUser(@PathParam("id") Long id) {
+            return userDetail.data("user", userService.findById(id));
+        }
+    }
+    ```
+  ruleID: thymeleaf-to-qute-00002
+  when:
+    and:
+      - java.referenced:
+          location: ANNOTATION
+          pattern: org.springframework.stereotype.Controller
+      - java.referenced:
+          pattern: org.springframework.ui.Model
+          location: TYPE
+
+- category: mandatory
+  customVariables: []
+  description: Replace Thymeleaf Model with Qute TemplateInstance data binding
+  effort: 2
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Qute Data Binding
+      url: https://quarkus.io/guides/qute#template-instance
+  message: |
+    Replace Spring's Model attribute binding with Qute's TemplateInstance data method.
+    
+    Before (Thymeleaf):
+    ```java
+    @GetMapping("/profile")
+    public String userProfile(Model model, Authentication auth) {
+        User user = userService.findByUsername(auth.getName());
+        model.addAttribute("user", user);
+        model.addAttribute("roles", user.getRoles());
+        model.addAttribute("lastLogin", user.getLastLogin());
+        return "profile";
+    }
+    ```
+    
+    After (Qute):
+    ```java
+    @GET
+    @Path("/profile")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance userProfile(@Context SecurityContext securityContext) {
+        User user = userService.findByUsername(securityContext.getUserPrincipal().getName());
+        return profile
+            .data("user", user)
+            .data("roles", user.getRoles())
+            .data("lastLogin", user.getLastLogin());
+    }
+    ```
+    
+    Or use data map for multiple attributes:
+    ```java
+    return profile.data(Map.of(
+        "user", user,
+        "roles", user.getRoles(),
+        "lastLogin", user.getLastLogin()
+    ));
+    ```
+  ruleID: thymeleaf-to-qute-00003
+  when:
+    java.referenced:
+      pattern: org.springframework.ui.Model
+      location: TYPE
+
+- category: mandatory
+  customVariables: []
+  description: Convert Thymeleaf templates to Qute template syntax
+  effort: 5
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Qute Template Syntax
+      url: https://quarkus.io/guides/qute-reference#syntax-and-building-blocks
+  - title: Thymeleaf to Qute Migration
+      url: https://quarkus.io/guides/qute#comparison-with-other-templating-engines
+  message: |
+    Convert Thymeleaf template syntax to Qute template syntax.
+    
+    Key syntax changes:
+    
+    **Variable expressions:**
+    - Thymeleaf: `<span th:text="${user.name}">Name</span>`
+    - Qute: `<span>{user.name}</span>`
+    
+    **Conditional rendering:**
+    - Thymeleaf: `<div th:if="${user.active}">Active user</div>`
+    - Qute: `{#if user.active}<div>Active user</div>{/if}`
+    
+    **Loops:**
+    - Thymeleaf: `<li th:each="user : ${users}" th:text="${user.name}"></li>`
+    - Qute: `{#for user in users}<li>{user.name}</li>{/for}`
+    
+    **URL building:**
+    - Thymeleaf: `<a th:href="@{/users/{id}(id=${user.id})}">View</a>`
+    - Qute: `<a href="/users/{user.id}">View</a>`
+    
+    **Form handling:**
+    - Thymeleaf: `<form th:action="@{/users}" th:object="${user}" method="post">`
+    - Qute: `<form action="/users" method="post">`
+    
+    **Fragment inclusion:**
+    - Thymeleaf: `<div th:replace="fragments/header :: header"></div>`
+    - Qute: `{#include fragments/header.html /}`
+    
+    Move templates from `src/main/resources/templates/` (Thymeleaf) to `src/main/resources/templates/` (Qute) - same location but different syntax.
+  ruleID: thymeleaf-to-qute-00004
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.(html|htm)"
+      pattern: "th:(text|if|each|href|action|object|replace|include)"
+
+- category: mandatory
+  customVariables: []
+  description: Replace Thymeleaf configuration with Qute configuration
+  effort: 2
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Qute Configuration
+      url: https://quarkus.io/guides/qute-reference#configuration-reference
+  message: |
+    Replace Thymeleaf configuration properties with Quarkus Qute configuration.
+    
+    Remove Thymeleaf properties:
+    ```properties
+    spring.thymeleaf.cache=false
+    spring.thymeleaf.prefix=classpath:/templates/
+    spring.thymeleaf.suffix=.html
+    spring.thymeleaf.mode=HTML
+    spring.thymeleaf.encoding=UTF-8
+    ```
+    
+    Add Qute configuration:
+    ```properties
+    # Development mode - disable template caching
+    %dev.quarkus.qute.dev-mode.no-restart-templates=true
+    
+    # Template location (default: src/main/resources/templates)
+    # quarkus.qute.template-path-exclude=fragments/**
+    
+    # Content types
+    quarkus.qute.content-types.html=text/html
+    
+    # Remove unused template fragments detection
+    quarkus.qute.remove-standalone-lines=true
+    ```
+    
+    Qute templates are automatically discovered in `src/main/resources/templates/` directory.
+  ruleID: thymeleaf-to-qute-00005
+  when:
+    builtin.filecontent:
+      filePattern: "application.*\\.(properties|yml|yaml)"
+      pattern: "spring\\.thymeleaf\\."
+
+- category: optional
+  customVariables: []
+  description: Replace Thymeleaf fragments with Qute includes
+  effort: 3
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Qute Include Tags
+      url: https://quarkus.io/guides/qute-reference#include_helper
+  message: |
+    Replace Thymeleaf fragments with Qute include mechanism.
+    
+    Before (Thymeleaf fragments):
+    ```html
+    <!-- fragments/header.html -->
+    <header th:fragment="header(title)">
+        <h1 th:text="${title}">Default Title</h1>
+        <nav>...</nav>
+    </header>
+    
+    <!-- main template -->
+    <div th:replace="fragments/header :: header('My Page')"></div>
+    ```
+    
+    After (Qute includes):
+    ```html
+    <!-- fragments/header.html -->
+    <header>
+        <h1>{title}</h1>
+        <nav>...</nav>
+    </header>
+    
+    <!-- main template -->
+    {#include fragments/header.html title='My Page' /}
+    ```
+    
+    Or use parameterized includes:
+    ```html
+    {#include fragments/header.html}
+        {#title}My Page{/title}
+    {/include}
+    ```
+  ruleID: thymeleaf-to-qute-00006
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.(html|htm)"
+      pattern: "th:(fragment|replace|include)"
+
+- category: mandatory
+  customVariables: []
+  description: Replace Thymeleaf security expressions with Quarkus security integration
+  effort: 3
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Security in Templates
+      url: https://quarkus.io/guides/security#security-identity-in-templates
+  message: |
+    Replace Thymeleaf Spring Security expressions with Quarkus security integration in Qute templates.
+    
+    Before (Thymeleaf + Spring Security):
+    ```html
+    <div sec:authorize="isAuthenticated()">
+        Welcome <span sec:authentication="name">User</span>!
+    </div>
+    
+    <div sec:authorize="hasRole('ADMIN')">
+        <a href="/admin">Admin Panel</a>
+    </div>
+    
+    <div sec:authorize="hasAuthority('USER_WRITE')">
+        <button>Edit User</button>
+    </div>
+    ```
+    
+    After (Qute + Quarkus Security):
+    ```html
+    {#if identity.isAnonymous == false}
+        Welcome {identity.principal.name}!
+    {/if}
+    
+    {#if identity.hasRole('ADMIN')}
+        <a href="/admin">Admin Panel</a>
+    {/if}
+    
+    {#if identity.hasPermission('USER_WRITE')}
+        <button>Edit User</button>
+    {/if}
+    ```
+    
+    The `identity` object is automatically available in Qute templates when using Quarkus Security.
+  ruleID: thymeleaf-to-qute-00007
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.(html|htm)"
+      pattern: "sec:(authorize|authentication)"
+
+- category: optional
+  customVariables: []
+  description: Replace Thymeleaf form binding with Quarkus form handling
+  effort: 4
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Form Handling
+      url: https://quarkus.io/guides/rest#handling-form-data
+  - title: Qute Form Templates
+      url: https://quarkus.io/guides/qute#form-templates
+  message: |
+    Replace Thymeleaf form binding with Quarkus form handling and Qute templates.
+    
+    Before (Thymeleaf form binding):
+    ```html
+    <form th:action="@{/users}" th:object="${user}" method="post">
+        <input type="text" th:field="*{firstName}" th:errorclass="error"/>
+        <span th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">Error</span>
+        
+        <input type="email" th:field="*{email}" th:errorclass="error"/>
+        <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Error</span>
+        
+        <button type="submit">Save</button>
+    </form>
+    ```
+    
+    After (Qute + Quarkus form handling):
+    ```html
+    <form action="/users" method="post">
+        <input type="text" name="firstName" value="{user.firstName}" 
+               class="{#if validationErrors.firstName}error{/if}"/>
+        {#if validationErrors.firstName}
+            <span class="error">{validationErrors.firstName}</span>
+        {/if}
+        
+        <input type="email" name="email" value="{user.email}"
+               class="{#if validationErrors.email}error{/if}"/>
+        {#if validationErrors.email}
+            <span class="error">{validationErrors.email}</span>
+        {/if}
+        
+        <button type="submit">Save</button>
+    </form>
+    ```
+    
+    Handle form submission in controller:
+    ```java
+    import jakarta.ws.rs.POST;
+    import jakarta.ws.rs.Path;
+    import jakarta.ws.rs.Consumes;
+    import jakarta.ws.rs.Produces;
+    import jakarta.ws.rs.BeanParam;
+    import jakarta.ws.rs.core.MediaType;
+    import jakarta.validation.Valid;
+    
+    @POST
+    @Path("/users")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance createUser(@BeanParam @Valid UserForm userForm) {
+        // Handle validation errors and return template with errors
+        return userFormTemplate.data("user", userForm)
+                               .data("validationErrors", getValidationErrors());
+    }
+    ```
+  ruleID: thymeleaf-to-qute-00008
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.(html|htm)"
+      pattern: "th:(field|object|errorclass|errors)"
+
+- category: optional
+  customVariables: []
+  description: Replace Thymeleaf internationalization with Quarkus i18n
+  effort: 3
+  labels:
+    - konveyor.io/source=springboot
+    - konveyor.io/target=quarkus
+  links:
+    - title: Quarkus Localization
+      url: https://quarkus.io/guides/localization
+  - title: Qute Localization
+      url: https://quarkus.io/guides/qute-reference#localization
+  message: |
+    Replace Thymeleaf internationalization with Quarkus localization support in Qute.
+    
+    Before (Thymeleaf i18n):
+    ```html
+    <h1 th:text="#{page.title}">Default Title</h1>
+    <p th:text="#{welcome.message(${user.name})}">Welcome message</p>
+    <span th:text="#{user.count(${users.size()})}">User count</span>
+    ```
+    
+    After (Qute + Quarkus i18n):
+    ```html
+    <h1>{msg:page_title}</h1>
+    <p>{msg:welcome_message(user.name)}</p>
+    <span>{msg:user_count(users.size)}</span>
+    ```
+    
+    Create message bundles in `src/main/resources/messages/`:
+    - `messages.properties` (default)
+    - `messages_en.properties`
+    - `messages_es.properties`
+    
+    Example messages.properties:
+    ```properties
+    page_title=My Application
+    welcome_message=Welcome {0}!
+    user_count={0,choice,0#No users|1#One user|1<{0} users}
+    ```
+    
+    Add Quarkus localization dependency:
+    ```xml
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-localization</artifactId>
+    </dependency>
+    ```
+  ruleID: thymeleaf-to-qute-00009
+  when:
+    builtin.filecontent:
+      filePattern: ".*\\.(html|htm)"
+      pattern: "#\\{[^}]+\\}"

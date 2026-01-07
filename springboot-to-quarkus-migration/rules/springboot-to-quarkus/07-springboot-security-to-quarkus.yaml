@@ -42,6 +42,7 @@
   when:
     java.referenced:
       pattern: org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+      location: INHERITANCE
 
 - category: mandatory
   customVariables: []
@@ -177,6 +178,7 @@
   when:
     java.referenced:
       pattern: org.springframework.security.core.Authentication
+      location: TYPE
 
 - category: mandatory
   customVariables: []
@@ -260,6 +262,7 @@
   when:
     java.referenced:
       pattern: org.springframework.security.crypto.password.PasswordEncoder
+      location: TYPE
 
 - category: mandatory
   customVariables: []
@@ -310,6 +313,7 @@
   when:
     java.referenced:
       pattern: org.springframework.security.core.userdetails.UserDetailsService
+      location: INHERITANCE
 
 - category: mandatory
   customVariables: []

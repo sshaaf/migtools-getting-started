@@ -184,6 +184,7 @@
   when:
     java.referenced:
       pattern: org.springframework.test.web.servlet.MockMvc
+      location: TYPE
 
 - category: mandatory
   customVariables: []
@@ -278,6 +279,7 @@
   when:
     java.referenced:
       pattern: org.springframework.boot.test.web.client.TestRestTemplate
+      location: TYPE
 
 - category: optional
   customVariables: []

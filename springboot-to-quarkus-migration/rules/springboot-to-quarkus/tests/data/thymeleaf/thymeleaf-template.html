@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${title}">Default Title</title>
+</head>
+<body>
+    <h1 th:text="${pageTitle}">Welcome</h1>
+    
+    <!-- This should trigger template syntax conversion rules -->
+    <div th:if="${user.active}">
+        <p>User <span th:text="${user.name}">Name</span> is active</p>
+    </div>
+    
+    <ul>
+        <li th:each="user : ${users}" th:text="${user.name}">User Name</li>
+    </ul>
+    
+    <a th:href="@{/users/{id}(id=${user.id})}">View User</a>
+    
+    <!-- Fragment inclusion -->
+    <div th:replace="fragments/header :: header"></div>
+    
+    <!-- Security expressions -->
+    <div sec:authorize="isAuthenticated()">
+        Welcome <span sec:authentication="name">User</span>!
+    </div>
+    
+    <div sec:authorize="hasRole('ADMIN')">
+        <a href="/admin">Admin Panel</a>
+    </div>
+    
+    <!-- Form binding -->
+    <form th:action="@{/users}" th:object="${user}" method="post">
+        <input type="text" th:field="*{firstName}" th:errorclass="error"/>
+        <span th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">Error</span>
+    </form>
+    
+    <!-- Internationalization -->
+    <h2 th:text="#{page.title}">Page Title</h2>
+    <p th:text="#{welcome.message(${user.name})}">Welcome message</p>
+</body>
+</html>
+
+
+
+
+
+
+
+

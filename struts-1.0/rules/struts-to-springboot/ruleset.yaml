@@ -1,0 +1,17 @@
+name: struts-to-springboot
+description: |
+  Comprehensive ruleset for migrating Apache Struts 1.x applications to Spring Boot 3.x.
+  
+  This ruleset covers:
+  - Dependency management (Struts → Spring Boot starters)
+  - Controller layer (Action → @Controller)
+  - Form layer (ActionForm → DTO with Bean Validation)
+  - Data access layer (JDBC DAO → Spring Data JPA Repository)
+  - View layer (JSP/Struts tags → Thymeleaf)
+  - Configuration (struts-config.xml, web.xml → Spring Boot auto-configuration)
+
+labels:
+  - konveyor.io/source=struts
+  - konveyor.io/target=springboot
+
+

@@ -1,0 +1,62 @@
+- ruleID: thymeleaf-to-qute-00001
+  unaffected:
+    - pom-with-qute.xml
+  violated:
+    - pom-with-thymeleaf.xml
+
+- ruleID: thymeleaf-to-qute-00002
+  unaffected:
+    - QuteController.java
+  violated:
+    - ThymeleafController.java
+
+- ruleID: thymeleaf-to-qute-00003
+  unaffected:
+    - QuteTemplateInstance.java
+  violated:
+    - SpringModelController.java
+
+- ruleID: thymeleaf-to-qute-00004
+  unaffected:
+    - qute-template.html
+  violated:
+    - thymeleaf-template.html
+    - thymeleaf-with-expressions.html
+
+- ruleID: thymeleaf-to-qute-00005
+  unaffected:
+    - application-qute.properties
+  violated:
+    - application-thymeleaf.properties
+
+- ruleID: thymeleaf-to-qute-00006
+  unaffected:
+    - qute-includes.html
+  violated:
+    - thymeleaf-fragments.html
+
+- ruleID: thymeleaf-to-qute-00007
+  unaffected:
+    - qute-security.html
+  violated:
+    - thymeleaf-security.html
+
+- ruleID: thymeleaf-to-qute-00008
+  unaffected:
+    - qute-form.html
+  violated:
+    - thymeleaf-form.html
+
+- ruleID: thymeleaf-to-qute-00009
+  unaffected:
+    - qute-i18n.html
+  violated:
+    - thymeleaf-i18n.html
+
+
+
+
+
+
+
+
