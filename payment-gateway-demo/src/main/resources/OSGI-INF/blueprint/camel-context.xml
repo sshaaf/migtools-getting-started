@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xsi:schemaLocation="
+               http://www.osgi.org/xmlns/blueprint/v1.0.0
+               https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+               http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+    <!-- Property placeholder - Kantra: karaf-blueprint-property-placeholder -->
+    <cm:property-placeholder persistent-id="com.example.paymentgateway" update-strategy="reload">
+        <cm:default-properties>
+            <cm:property name="wmq.host" value="localhost"/>
+            <cm:property name="wmq.port" value="1414"/>
+            <cm:property name="wmq.queue.manager" value="QM1"/>
+            <cm:property name="db.url" value="jdbc:oracle:thin:@localhost:1521:orcl"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
+
+    <!-- OSGi DataSource reference - Kantra: karaf-osgi-datasource-reference -->
+    <reference id="dataSource" interface="javax.sql.DataSource"
+               filter="(osgi.jndi.service.name=jdbc/oracleDS)"/>
+
+    <!-- JdbcTemplate from DataSource -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- Blueprint beans - Kantra: karaf-blueprint-bean-to-spring -->
+    <bean id="paymentDao" class="com.example.paymentgateway.PaymentDao">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <bean id="paymentProcessor" class="com.example.paymentgateway.PaymentProcessor">
+        <property name="paymentDao" ref="paymentDao"/>
+    </bean>
+
+    <!-- Custom WMQ component registration -->
+    <bean id="wmq" class="com.example.paymentgateway.WmqComponent"/>
+
+    <!-- Camel context - Kantra: karaf-blueprint-camelcontext, karaf-route-from-uri-xml, karaf-wmq-uri-to-jms -->
+    <camelContext id="camelContext" xmlns="http://camel.apache.org/schema/blueprint">
+        <route id="paymentInRoute">
+            <from uri="wmq:queue:PAYMENTS.IN"/>
+            <to uri="bean:paymentProcessor"/>
+            <to uri="wmq:queue:PAYMENTS.OUT"/>
+        </route>
+        <route id="paymentAuthRoute">
+            <from uri="wmq:queue:PAYMENTS.AUTH"/>
+            <to uri="bean:paymentProcessor"/>
+            <to uri="wmq:queue:PAYMENTS.CONFIRMED"/>
+        </route>
+    </camelContext>
+</blueprint>

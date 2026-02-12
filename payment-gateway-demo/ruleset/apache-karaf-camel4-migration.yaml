@@ -1,0 +1,373 @@
+# Apache Karaf / OSGi Blueprint to Spring Boot and Camel 4.x migration rules
+# Generated from KARAF-TO-SPRINGBOOT-MIGRATION-SPEC.md using Konveyor Scribe MCP
+# Use: kantra analyze --input <project> --output <dir> --rules apache-karaf-camel4-migration.yaml
+---
+- ruleID: "karaf-pom-packaging-bundle-to-jar"
+  message: "Migrate from OSGi bundle to Spring Boot JAR. Before: <packaging>bundle</packaging> After: <packaging>jar</packaging>. Add Spring Boot parent and spring-boot-maven-plugin."
+  description: "Detects XML content: //packaging[text()='bundle']"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//packaging[text()='bundle']"
+
+- ruleID: "karaf-camel-blueprint-to-spring-boot-starter"
+  message: "Replace camel-blueprint with camel-spring-boot-starter for Spring Boot. Before: <dependency><groupId>org.apache.camel</groupId><artifactId>camel-blueprint</artifactId></dependency> After: <dependency><groupId>org.apache.camel.springboot</groupId><artifactId>camel-spring-boot-starter</artifactId><version>4.4.0</version></dependency>"
+  description: "Detects XML content: //dependency[artifactId='camel-blueprint']"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//dependency[artifactId='camel-blueprint']"
+
+- ruleID: "karaf-maven-bundle-plugin-to-spring-boot"
+  message: "Replace maven-bundle-plugin with spring-boot-maven-plugin. Before: maven-bundle-plugin with Bundle instructions. After: spring-boot-maven-plugin with <includeSystemScope>true</includeSystemScope> for system-scoped libs."
+  description: "Detects XML content: //plugin[artifactId='maven-bundle-plugin']"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//plugin[artifactId='maven-bundle-plugin']"
+
+- ruleID: "camel4-exchange-getOut-to-getMessage"
+  message: "Camel 4.x: Replace exchange.getOut() with exchange.getMessage(). Before: exchange.getOut().setBody(x); exchange.getOut().setHeader(k,v); After: exchange.getMessage().setBody(x); exchange.getMessage().setHeader(k,v);"
+  description: "Detects Java method call: getOut"
+  category: "mandatory"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "getOut"
+      location: "METHOD_CALL"
+
+- ruleID: "camel4-exchange-getIn-to-getMessage"
+  message: "Camel 4.x: Prefer exchange.getMessage() for current message. For in message use getMessage() (replaces getIn()). Before: exchange.getIn().getBody(String.class); After: exchange.getMessage().getBody(String.class);"
+  description: "Detects Java method call: getIn"
+  category: "mandatory"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "getIn"
+      location: "METHOD_CALL"
+
+- ruleID: "karaf-blueprint-camelcontext"
+  message: "Migrate Blueprint Camel context to Spring Boot Java DSL. Before: <camelContext xmlns=\"http://camel.apache.org/schema/blueprint\"> with <route><from uri=\"wmq:...\"/> in XML. After: @Component class extending RouteBuilder with from(\"jms:queue:...\") in Java."
+  description: "Detects Blueprint camelContext"
+  category: "mandatory"
+  effort: 4
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[namespace-uri()='http://camel.apache.org/schema/blueprint' and local-name()='camelContext']"
+
+- ruleID: "karaf-blueprint-property-placeholder"
+  message: "Migrate Blueprint cm:property-placeholder to Spring Boot. Before: <cm:property-placeholder persistent-id=\"com.example.app\"/> in Blueprint. After: application.yml and @Value or @ConfigurationProperties in Spring Boot."
+  description: "Detects Blueprint property-placeholder"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[contains(name(), 'property-placeholder') or contains(local-name(), 'property-placeholder')]"
+
+- ruleID: "karaf-osgi-datasource-reference"
+  message: "Replace OSGi DataSource reference with Spring Boot DataSource. Before: <reference id=\"dataSource\" interface=\"javax.sql.DataSource\" filter=\"...\"/> After: @Bean DataSource in @Configuration using HikariCP and spring.datasource.* in application.yml."
+  description: "Detects OSGi DataSource reference"
+  category: "mandatory"
+  effort: 3
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[local-name()='reference' and contains(@interface, 'DataSource')]"
+
+- ruleID: "karaf-wmq-uri-to-jms"
+  message: "Replace custom wmq: URIs with standard jms:. Before: from uri=\"wmq:queue:ORDERS.IN\"; to uri=\"wmq:queue:ORDERS.OUT\". After: from(\"jms:queue:ORDERS.IN\"); to(\"jms:queue:ORDERS.OUT\") with JmsComponent configured for IBM MQ."
+  description: "Detects content in *.xml: wmq:"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.filecontent:
+      filePattern: "*.xml"
+      pattern: "wmq:"
+
+- ruleID: "karaf-camel-blueprint-test-support"
+  message: "Migrate Blueprint test to Spring Boot. Before: extends CamelBlueprintTestSupport, getBlueprintDescriptor(). After: @CamelSpringBootTest, @SpringBootTest, @ActiveProfiles(\"test\"), inject CamelContext and ProducerTemplate."
+  description: "Detects Java inheritance: CamelBlueprintTestSupport"
+  category: "mandatory"
+  effort: 3
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "CamelBlueprintTestSupport"
+      location: "INHERITANCE"
+
+- ruleID: "karaf-camel-test-blueprint-dependency"
+  message: "Replace camel-test-blueprint with camel-test-spring-junit5. Before: camel-test-blueprint 2.x. After: camel-test-spring-junit5 4.4.0 and spring-boot-starter-test for Spring Boot tests."
+  description: "Detects XML content: //dependency[artifactId='camel-test-blueprint']"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//dependency[artifactId='camel-test-blueprint']"
+
+- ruleID: "karaf-pom-java-version-17"
+  message: "Update Java version to 17 for Spring Boot 3 and Camel 4. Before: <java.version>1.8</java.version> or compiler source/target 1.8. After: <java.version>17</java.version> and maven-compiler-plugin source/target 17."
+  description: "Detects Java 1.8 in pom.xml"
+  category: "mandatory"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//maven.compiler.source[text()='1.8'] | //java.version[text()='1.8'] | //source[text()='1.8'] | //target[text()='1.8']"
+
+- ruleID: "karaf-camel-version-2-to-4"
+  message: "Update Camel version from 2.x to 4.x. Before: camel.version 2.23.2, camel-core 2.x. After: camel.version 4.4.0, use camel-spring-boot-starter 4.4.0."
+  description: "Detects Camel 2.x version in pom"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[local-name()='camel.version' or (local-name()='version' and parent::*/artifactId='camel-core')]//*[contains(text(),'2.')]"
+
+- ruleID: "karaf-camel-core-2x-dependency"
+  message: "Update camel-core from 2.x to 4.x. Use camel-spring-boot-starter 4.4.0 which brings camel-core. Before: <artifactId>camel-core</artifactId><version>2.23.2</version>. After: camel-spring-boot-starter 4.4.0."
+  description: "Detects camel-core 2.x dependency"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//dependency[artifactId='camel-core']/version[starts-with(normalize-space(text()),'2.')]"
+
+- ruleID: "karaf-junit4-test-to-junit5"
+  message: "Migrate JUnit 4 to JUnit 5. Before: import org.junit.Test; @Test. After: import org.junit.jupiter.api.Test; @Test. Use @CamelSpringBootTest and @SpringBootTest for Camel tests."
+  description: "Detects Java annotation: org.junit.Test"
+  category: "mandatory"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "org.junit.Test"
+      location: "ANNOTATION"
+
+- ruleID: "camel4-assertMockEndpointsSatisfied"
+  message: "Camel 4.x test API: Replace assertMockEndpointsSatisfied() with assertIsSatisfied(). Before: getMockEndpoint(\"mock:result\").assertMockEndpointsSatisfied(); After: mockEndpoint.assertIsSatisfied();"
+  description: "Detects Java method call: assertMockEndpointsSatisfied"
+  category: "mandatory"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "assertMockEndpointsSatisfied"
+      location: "METHOD_CALL"
+
+- ruleID: "karaf-blueprint-namespace"
+  message: "Migrate from OSGi Blueprint to Spring Boot. Blueprint XML (beans, reference, camelContext) should be replaced by Spring @Configuration, @Bean, @Component and Java RouteBuilder classes. See KARAF-TO-SPRINGBOOT-MIGRATION-SPEC.md."
+  description: "Detects Blueprint namespace usage"
+  category: "mandatory"
+  effort: 5
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[namespace-uri()='http://www.osgi.org/xmlns/blueprint/v1.0.0']"
+
+- ruleID: "karaf-defaultcomponent-extend"
+  message: "Custom Camel components (e.g. WmqComponent extending DefaultComponent) should be replaced by standard components. For WebSphere MQ use JmsComponent with IBM MQ MQConnectionFactory instead of custom WmqComponent."
+  description: "Detects Java inheritance: org.apache.camel.impl.DefaultComponent"
+  category: "mandatory"
+  effort: 4
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "org.apache.camel.impl.DefaultComponent"
+      location: "INHERITANCE"
+
+- ruleID: "karaf-java-wmq-uri"
+  message: "Replace wmq: URI strings with jms: in Java DSL. Before: from(\"wmq:queue:X\"); After: from(\"jms:queue:X\"); Configure JmsComponent with IBM MQ connection factory."
+  description: "Detects content in *.java: wmq:"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.filecontent:
+      filePattern: "*.java"
+      pattern: "wmq:"
+
+- ruleID: "karaf-blueprint-bean-to-spring"
+  message: "Migrate Blueprint bean to Spring. Before: <bean id=\"orderProcessor\" class=\"com.example.OrderProcessor\"><property name=\"dataSource\" ref=\"dataSource\"/></bean>. After: @Component on class and constructor/field injection; or @Bean in @Configuration."
+  description: "Detects Blueprint bean definitions"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[local-name()='bean' and namespace-uri()='http://www.osgi.org/xmlns/blueprint/v1.0.0']"
+
+- ruleID: "karaf-routebuilder-spring-component"
+  message: "RouteBuilder in Spring Boot should be a Spring-managed bean. Add @Component (or @Bean) so Camel discovers routes. Use constructor injection for strategies and services."
+  description: "Detects Java inheritance: org.apache.camel.builder.RouteBuilder"
+  category: "optional"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "org.apache.camel.builder.RouteBuilder"
+      location: "INHERITANCE"
+
+- ruleID: "karaf-route-from-uri-xml"
+  message: "Convert XML route from with wmq: to Java DSL with jms:. Before: <from uri=\"wmq:queue:ORDERS.IN\"/> in Blueprint/Spring XML. After: from(\"jms:queue:ORDERS.IN\").routeId(\"orderRoute\") in RouteBuilder."
+  description: "Detects Camel XML from with wmq: URI"
+  category: "mandatory"
+  effort: 3
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//*[local-name()='from' and (namespace-uri()='http://camel.apache.org/schema/blueprint' or namespace-uri()='http://camel.apache.org/schema/spring') and contains(@uri,'wmq:')]"
+
+- ruleID: "karaf-jdbc-setter-injection-to-constructor"
+  message: "Prefer constructor injection over setter for JdbcTemplate. Before: setJdbcTemplate(JdbcTemplate) used by Blueprint. After: final JdbcTemplate jdbcTemplate; public OrderDao(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; } and @Repository."
+  description: "Detects Java method call: setJdbcTemplate"
+  category: "optional"
+  effort: 1
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    java.referenced:
+      pattern: "setJdbcTemplate"
+      location: "METHOD_CALL"
+
+- ruleID: "karaf-add-spring-boot-parent"
+  message: "Add Spring Boot parent POM when migrating from Karaf. In pom.xml add: <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.0</version><relativePath/></parent>. Ensure packaging is jar and java.version 17."
+  description: "Detects project without parent (candidate for Spring Boot parent)"
+  category: "mandatory"
+  effort: 2
+  labels:
+  - konveyor.io/source=karaf
+  - konveyor.io/target=springboot
+  links: []
+  tag: []
+  customVariable: []
+  when:
+    builtin.xml:
+      xpath: "//project[not(parent)]"

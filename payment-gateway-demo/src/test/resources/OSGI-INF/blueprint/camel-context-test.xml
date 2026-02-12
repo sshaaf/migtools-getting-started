@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test-only blueprint: uses bean DataSource so unit tests run without OSGi registry. -->
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xsi:schemaLocation="
+               http://www.osgi.org/xmlns/blueprint/v1.0.0
+               https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+               http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+    <cm:property-placeholder persistent-id="com.example.paymentgateway.test">
+        <cm:default-properties>
+            <cm:property name="wmq.host" value="localhost"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="org.h2.Driver"/>
+        <property name="url" value="jdbc:h2:mem:paymenttest;DB_CLOSE_DELAY=-1"/>
+        <property name="username" value="sa"/>
+        <property name="password" value=""/>
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="testDbInit" class="com.example.paymentgateway.TestDbInit" init-method="init">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <bean id="paymentDao" class="com.example.paymentgateway.PaymentDao">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <bean id="paymentProcessor" class="com.example.paymentgateway.PaymentProcessor">
+        <property name="paymentDao" ref="paymentDao"/>
+    </bean>
+
+    <bean id="wmq" class="com.example.paymentgateway.WmqComponent"/>
+
+    <camelContext id="camelContext" xmlns="http://camel.apache.org/schema/blueprint">
+        <route id="paymentInRoute">
+            <from uri="direct:paymentIn"/>
+            <to uri="bean:paymentProcessor"/>
+            <to uri="mock:result"/>
+        </route>
+    </camelContext>
+</blueprint>

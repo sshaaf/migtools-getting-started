@@ -74,6 +74,8 @@ node_modules/
 # dotenv environment variables file
 .env
 
+target
+
 # Quarkus
 target/quarkus-app/
 target/quarkus-app-doc/
