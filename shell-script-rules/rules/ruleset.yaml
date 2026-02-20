@@ -1,0 +1,2 @@
+name: shell-script-environment-variables
+description: "Kantra rules to detect environment variable usage in shell scripts (export, default values, and variable references). Use with Konveyor/Kantra to flag and document env var patterns in *.sh scripts."

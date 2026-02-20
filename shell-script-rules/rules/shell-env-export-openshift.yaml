@@ -1,0 +1,49 @@
+---
+# Kantra rule: detect shell script exports and suggest OpenShift ConfigMaps.
+- ruleID: "shell-env-export-openshift-005"
+  description: "Detects export of environment variables in shell scripts; suggests ConfigMaps for OpenShift deployment"
+  message: |
+    **Environment variable export detected – consider ConfigMaps for OpenShift**
+
+    This line exports a variable in a shell script (e.g. `export APP_PORT=...`). When deploying to OpenShift, configuration is better managed with ConfigMaps than with exports in scripts.
+
+    **Before:** Script exports variables that are then used by the process. This couples configuration to the script and makes it harder to change per environment in OpenShift.
+
+    **After:** Use an OpenShift/Kubernetes ConfigMap to hold configuration and inject it as environment variables into the Deployment:
+
+    ```yaml
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: my-app-config
+    data:
+      APP_PORT: "8080"
+      APP_ENVIRONMENT: "development"
+      APP_MESSAGE: "Welcome!"
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    spec:
+      template:
+        spec:
+          containers:
+            - name: app
+              envFrom:
+                - configMapRef:
+                    name: my-app-config
+    ```
+
+    Or use `env` with `valueFrom.configMapKeyRef` for individual keys.
+
+    **Additional info:**
+    - ConfigMaps allow changing config without rebuilding images or editing scripts.
+    - Use `oc create configmap` or apply YAML; reference the ConfigMap in your Deployment or Pod spec.
+  category: "potential"
+  effort: 2
+  labels:
+    - "konveyor.io/source=shell"
+    - "konveyor.io/target=openshift-deployment"
+  when:
+    builtin.filecontent:
+      filePattern: "*.sh"
+      pattern: "export\\s+[A-Za-z_][A-Za-z0-9_]*="

@@ -1,0 +1,95 @@
+---
+# Kantra rules to detect environment variable usage in shell scripts.
+# Based on patterns from deploy.sh and stop.sh (e.g. export VAR=, ${VAR:-default}, $VAR).
+- ruleID: "shell-env-export-001"
+  description: "Detects export of environment variables in shell scripts"
+  message: |
+    **Environment variable export detected**
+
+    This line exports a variable to the environment (e.g. `export APP_PORT=...`).
+
+    **Before:** Script exports variables that may be undocumented or inconsistent across environments.
+
+    **After:** Prefer documenting expected env vars (e.g. in a README or env.example), using a single source of defaults, and validating required variables at startup.
+
+    **Additional info:**
+    - Consider listing all supported environment variables in one place.
+    - Use `${VAR:-default}` for optional overrides and fail fast when required vars are missing.
+  category: "potential"
+  effort: 1
+  labels:
+    - "konveyor.io/source=shell"
+    - "konveyor.io/target=shell"
+  when:
+    builtin.filecontent:
+      filePattern: "*.sh"
+      pattern: "export\\s+[A-Za-z_][A-Za-z0-9_]*="
+
+- ruleID: "shell-env-default-value-002"
+  description: "Detects default value substitution for environment variables (${VAR:-default})"
+  message: |
+    **Default value pattern for environment variable**
+
+    This line uses the `${VAR:-default}` pattern to provide a default when an environment variable is unset (e.g. `APP_PORT="${APP_PORT:-8080}"`).
+
+    **Before:** Inline defaults can be scattered and repeated across scripts.
+
+    **After:** Consider centralizing defaults (e.g. in a shared config or one `set-defaults.sh`), or document them in an env.example file so operators know what can be overridden.
+
+    **Additional info:**
+    - This pattern is a good practice for optional configuration; ensure required variables are validated explicitly.
+  category: "potential"
+  effort: 1
+  labels:
+    - "konveyor.io/source=shell"
+    - "konveyor.io/target=shell"
+  when:
+    builtin.filecontent:
+      filePattern: "*.sh"
+      pattern: "\\$\\{[A-Za-z_][A-Za-z0-9_]*:-"
+
+- ruleID: "shell-env-braced-ref-003"
+  description: "Detects braced environment variable reference ${VAR} in shell scripts"
+  message: |
+    **Braced variable reference detected**
+
+    This line references a variable using `${VAR}` (e.g. `${APP_PORT}`, `${JAVA_HEAP_SIZE}`). Uppercase names are often used for environment or configuration variables.
+
+    **Before:** Script relies on variables that may be set by the environment or earlier in the script.
+
+    **After:** Ensure these variables are documented and set (either by export, default-value assignment, or a config file) so the script is portable and predictable.
+
+    **Additional info:**
+    - Prefer `${VAR}` over `$VAR` for clarity and to avoid word-splitting issues.
+  category: "potential"
+  effort: 1
+  labels:
+    - "konveyor.io/source=shell"
+    - "konveyor.io/target=shell"
+  when:
+    builtin.filecontent:
+      filePattern: "*.sh"
+      pattern: "\\$\\{[A-Z][A-Z0-9_]*\\}"
+
+- ruleID: "shell-env-unquoted-004"
+  description: "Detects use of $VAR (unbraced) for likely env/config variables in shell scripts"
+  message: |
+    **Unbraced variable reference (likely env/config)**
+
+    This line uses `$VAR` for a name that looks like an environment or config variable (e.g. `$APP_PORT`).
+
+    **Before:** Unbraced variables can cause word-splitting or globbing when values contain spaces or special characters.
+
+    **After:** Use braced form `${VAR}` for clarity and safety, and quote when used in arguments: `"${APP_PORT}"`.
+
+    **Additional info:**
+    - Prefer `"${VAR}"` in conditionals and command arguments to handle empty or space-containing values correctly.
+  category: "potential"
+  effort: 1
+  labels:
+    - "konveyor.io/source=shell"
+    - "konveyor.io/target=shell"
+  when:
+    builtin.filecontent:
+      filePattern: "*.sh"
+      pattern: "\\$[A-Z][A-Z0-9_]+"
